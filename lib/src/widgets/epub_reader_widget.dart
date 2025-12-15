@@ -44,18 +44,140 @@ class _ParagraphData {
         plainText = element.text.trim(),
         requiresRichContent = element.outerHtml != element.text;
 
+  /// 긴 문단 분할용 생성자
+  _ParagraphData.split({
+    required this.index,
+    required this.chapterIndex,
+    required this.html,
+    required this.plainText,
+    required this.requiresRichContent,
+    dom.Element? element,
+  }) : _element = element;
+
   final int index;
   final int chapterIndex;
   final String html;
   final String plainText;
   final bool requiresRichContent;
-  final dom.Element _element;
+  final dom.Element? _element;
 
   String get measurementText => plainText.isEmpty ? ' ' : plainText;
 
   bool get isWhitespaceOnly => plainText.isEmpty && !requiresRichContent;
 
-  dom.Element cloneElement() => _element.clone(true);
+  dom.Element? cloneElement() => _element?.clone(true);
+}
+
+/// 한글/텍스트 분할 시 자연스러운 분할 지점 찾기
+int _findTextBreakPoint(String text, int targetLength) {
+  if (targetLength >= text.length) return text.length;
+  if (targetLength <= 0) return 1;
+
+  // 문장 경계 문자들 (한글 포함)
+  const sentenceEnds = ['.', '!', '?', '。', '？', '！', '…'];
+
+  // targetLength 이전의 가장 가까운 문장 경계 찾기
+  for (int i = targetLength; i > targetLength ~/ 2; i--) {
+    if (i < text.length && sentenceEnds.contains(text[i])) {
+      return i + 1;
+    }
+  }
+
+  // 문장 경계 없으면 공백이나 줄바꿈 찾기
+  for (int i = targetLength; i > targetLength ~/ 2; i--) {
+    if (i < text.length && (text[i] == ' ' || text[i] == '\n')) {
+      return i + 1;
+    }
+  }
+
+  // 쉼표나 기타 구두점 찾기
+  const punctuation = [',', ';', ':', '、', '，'];
+  for (int i = targetLength; i > targetLength ~/ 2; i--) {
+    if (i < text.length && punctuation.contains(text[i])) {
+      return i + 1;
+    }
+  }
+
+  // 그래도 없으면 targetLength에서 자름
+  return targetLength;
+}
+
+/// 긴 문단을 페이지 높이에 맞게 분할
+List<_ParagraphData> _splitLongParagraph({
+  required _ParagraphData paragraph,
+  required TextPainter painter,
+  required TextStyle style,
+  required double maxWidth,
+  required double maxHeight,
+}) {
+  final text = paragraph.plainText;
+  if (text.isEmpty) return [paragraph];
+
+  // 전체 높이 측정
+  painter.text = TextSpan(text: text, style: style);
+  painter.layout(maxWidth: maxWidth);
+  final totalHeight = painter.height;
+
+  // 페이지 높이의 85%를 사용 (여유 공간 확보)
+  final targetHeight = maxHeight * 0.85;
+
+  // 분할 필요 없으면 원본 반환
+  if (totalHeight <= targetHeight) return [paragraph];
+
+  final result = <_ParagraphData>[];
+  int startIndex = 0;
+  int splitPartIndex = 0;
+
+  while (startIndex < text.length) {
+    // 이진 탐색으로 적절한 분할 지점 찾기
+    int low = 1;
+    int high = text.length - startIndex;
+    int bestLength = high;
+
+    while (low <= high) {
+      final mid = (low + high) ~/ 2;
+      final substring = text.substring(startIndex, startIndex + mid);
+
+      painter.text = TextSpan(text: substring, style: style);
+      painter.layout(maxWidth: maxWidth);
+
+      if (painter.height <= targetHeight) {
+        bestLength = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+
+    // 자연스러운 분할 지점 찾기
+    final endIndex = startIndex + bestLength;
+    final actualEndIndex = endIndex >= text.length
+        ? text.length
+        : startIndex + _findTextBreakPoint(
+            text.substring(startIndex, endIndex),
+            bestLength,
+          );
+
+    final splitText = text.substring(startIndex, actualEndIndex).trim();
+
+    if (splitText.isNotEmpty) {
+      result.add(_ParagraphData.split(
+        index: paragraph.index,
+        chapterIndex: paragraph.chapterIndex,
+        html: '<p>$splitText</p>',
+        plainText: splitText,
+        requiresRichContent: false,
+      ));
+    }
+
+    startIndex = actualEndIndex;
+    splitPartIndex++;
+
+    // 무한 루프 방지
+    if (splitPartIndex > 100) break;
+  }
+
+  return result.isEmpty ? [paragraph] : result;
 }
 
 List<dom.Element> _splitIntoBlockElements(dom.Element element) {
@@ -688,25 +810,48 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
     for (var index = 0; index < totalParagraphs; index++) {
       if (generation != _paginationGeneration) return;
 
-      final paragraph = paragraphs[index];
-      final segment = paragraph.measurementText;
-      painter.text = TextSpan(text: segment, style: style);
-      painter.layout(maxWidth: maxWidth);
-      final double paragraphHeight =
-          paragraph.isWhitespaceOnly ? paragraphSpacing : painter.height;
+      final originalParagraph = paragraphs[index];
 
-      final additionalSpacing = currentPage.isEmpty ? 0.0 : paragraphSpacing;
-      final nextHeight = currentHeight + paragraphHeight + additionalSpacing;
-      final fits = nextHeight <= maxHeight || currentPage.isEmpty;
-      if (fits) {
-        currentHeight = nextHeight;
-        currentPage.add(paragraph);
+      // 긴 문단인지 확인하고 필요시 분할
+      painter.text = TextSpan(text: originalParagraph.measurementText, style: style);
+      painter.layout(maxWidth: maxWidth);
+      final originalHeight = painter.height;
+
+      // 페이지 높이의 85%를 초과하면 분할
+      final List<_ParagraphData> paragraphsToProcess;
+      if (originalHeight > maxHeight * 0.85 && !originalParagraph.isWhitespaceOnly) {
+        paragraphsToProcess = _splitLongParagraph(
+          paragraph: originalParagraph,
+          painter: painter,
+          style: style,
+          maxWidth: maxWidth,
+          maxHeight: maxHeight,
+        );
       } else {
-        pages.add(_PageContent(List<_ParagraphData>.from(currentPage)));
-        currentPage
-          ..clear()
-          ..add(paragraph);
-        currentHeight = paragraphHeight;
+        paragraphsToProcess = [originalParagraph];
+      }
+
+      // 분할된 (또는 원본) 문단들을 처리
+      for (final paragraph in paragraphsToProcess) {
+        final segment = paragraph.measurementText;
+        painter.text = TextSpan(text: segment, style: style);
+        painter.layout(maxWidth: maxWidth);
+        final double paragraphHeight =
+            paragraph.isWhitespaceOnly ? paragraphSpacing : painter.height;
+
+        final additionalSpacing = currentPage.isEmpty ? 0.0 : paragraphSpacing;
+        final nextHeight = currentHeight + paragraphHeight + additionalSpacing;
+        final fits = nextHeight <= maxHeight || currentPage.isEmpty;
+        if (fits) {
+          currentHeight = nextHeight;
+          currentPage.add(paragraph);
+        } else {
+          pages.add(_PageContent(List<_ParagraphData>.from(currentPage)));
+          currentPage
+            ..clear()
+            ..add(paragraph);
+          currentHeight = paragraphHeight;
+        }
       }
 
       final progress =
@@ -1122,21 +1267,33 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
       } else {
         try {
           final element = paragraph.cloneElement();
-          element.classes.add('paragraph-root');
-          content = RepaintBoundary(
-            child: ClipRect(
-              child: Html.fromElement(
-                documentElement: element,
-                style: {
-                  '.paragraph-root': Style(
-                    margin: Margins.zero,
-                    padding: HtmlPaddings.zero,
-                  ).merge(Style.fromTextStyle(settings.textStyle)),
-                },
-                extensions: _buildHtmlExtensions(_loadedBook),
+          if (element != null) {
+            element.classes.add('paragraph-root');
+            content = RepaintBoundary(
+              child: ClipRect(
+                child: Html.fromElement(
+                  documentElement: element,
+                  style: {
+                    '.paragraph-root': Style(
+                      margin: Margins.zero,
+                      padding: HtmlPaddings.zero,
+                    ).merge(Style.fromTextStyle(settings.textStyle)),
+                  },
+                  extensions: _buildHtmlExtensions(_loadedBook),
+                ),
               ),
-            ),
-          );
+            );
+          } else {
+            // 분할된 문단은 plainText로 렌더링
+            content = paragraph.plainText.isEmpty
+                ? const SizedBox.shrink()
+                : Text(
+                    paragraph.plainText,
+                    style: settings.textStyle,
+                    textAlign: TextAlign.start,
+                    softWrap: true,
+                  );
+          }
         } catch (e) {
           content = paragraph.plainText.isEmpty
               ? const SizedBox.shrink()
