@@ -118,8 +118,8 @@ List<_ParagraphData> _splitLongParagraph({
   painter.layout(maxWidth: maxWidth);
   final totalHeight = painter.height;
 
-  // 페이지 높이의 85%를 사용 (여유 공간 확보)
-  final targetHeight = maxHeight * 0.85;
+  // 페이지 높이의 60%를 사용 (넉넉하게 분할)
+  final targetHeight = maxHeight * 0.60;
 
   // 분할 필요 없으면 원본 반환
   if (totalHeight <= targetHeight) return [paragraph];
@@ -817,9 +817,9 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
       painter.layout(maxWidth: maxWidth);
       final originalHeight = painter.height;
 
-      // 페이지 높이의 85%를 초과하면 분할
+      // 페이지 높이의 60%를 초과하면 분할
       final List<_ParagraphData> paragraphsToProcess;
-      if (originalHeight > maxHeight * 0.85 && !originalParagraph.isWhitespaceOnly) {
+      if (originalHeight > maxHeight * 0.60 && !originalParagraph.isWhitespaceOnly) {
         paragraphsToProcess = _splitLongParagraph(
           paragraph: originalParagraph,
           painter: painter,
