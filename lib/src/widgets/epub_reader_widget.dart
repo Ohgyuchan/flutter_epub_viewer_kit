@@ -68,116 +68,50 @@ class _ParagraphData {
   dom.Element? cloneElement() => _element?.clone(true);
 }
 
-/// 한글/텍스트 분할 시 자연스러운 분할 지점 찾기
-int _findTextBreakPoint(String text, int targetLength) {
-  if (targetLength >= text.length) return text.length;
-  if (targetLength <= 0) return 1;
+/// 텍스트를 문장 단위로 분리
+List<String> _splitIntoSentences(String text) {
+  if (text.isEmpty) return [];
 
-  // 문장 경계 문자들 (한글 포함)
-  const sentenceEnds = ['.', '!', '?', '。', '？', '！', '…'];
+  final sentences = <String>[];
+  final buffer = StringBuffer();
 
-  // targetLength 이전의 가장 가까운 문장 경계 찾기
-  for (int i = targetLength; i > targetLength ~/ 2; i--) {
-    if (i < text.length && sentenceEnds.contains(text[i])) {
-      return i + 1;
-    }
-  }
+  // 문장 끝 문자들
+  const sentenceEnds = {'.', '!', '?', '。', '？', '！'};
 
-  // 문장 경계 없으면 공백이나 줄바꿈 찾기
-  for (int i = targetLength; i > targetLength ~/ 2; i--) {
-    if (i < text.length && (text[i] == ' ' || text[i] == '\n')) {
-      return i + 1;
-    }
-  }
+  for (int i = 0; i < text.length; i++) {
+    final char = text[i];
+    buffer.write(char);
 
-  // 쉼표나 기타 구두점 찾기
-  const punctuation = [',', ';', ':', '、', '，'];
-  for (int i = targetLength; i > targetLength ~/ 2; i--) {
-    if (i < text.length && punctuation.contains(text[i])) {
-      return i + 1;
-    }
-  }
-
-  // 그래도 없으면 targetLength에서 자름
-  return targetLength;
-}
-
-/// 긴 문단을 페이지 높이에 맞게 분할
-List<_ParagraphData> _splitLongParagraph({
-  required _ParagraphData paragraph,
-  required TextPainter painter,
-  required TextStyle style,
-  required double maxWidth,
-  required double maxHeight,
-}) {
-  final text = paragraph.plainText;
-  if (text.isEmpty) return [paragraph];
-
-  // 전체 높이 측정
-  painter.text = TextSpan(text: text, style: style);
-  painter.layout(maxWidth: maxWidth);
-  final totalHeight = painter.height;
-
-  // 페이지 높이의 60%를 사용 (넉넉하게 분할)
-  final targetHeight = maxHeight * 0.60;
-
-  // 분할 필요 없으면 원본 반환
-  if (totalHeight <= targetHeight) return [paragraph];
-
-  final result = <_ParagraphData>[];
-  int startIndex = 0;
-  int splitPartIndex = 0;
-
-  while (startIndex < text.length) {
-    // 이진 탐색으로 적절한 분할 지점 찾기
-    int low = 1;
-    int high = text.length - startIndex;
-    int bestLength = high;
-
-    while (low <= high) {
-      final mid = (low + high) ~/ 2;
-      final substring = text.substring(startIndex, startIndex + mid);
-
-      painter.text = TextSpan(text: substring, style: style);
-      painter.layout(maxWidth: maxWidth);
-
-      if (painter.height <= targetHeight) {
-        bestLength = mid;
-        low = mid + 1;
-      } else {
-        high = mid - 1;
+    // 문장 끝 문자 발견
+    if (sentenceEnds.contains(char)) {
+      // 다음 문자가 공백, 줄바꿈, 또는 끝이면 문장 완료
+      if (i + 1 >= text.length ||
+          text[i + 1] == ' ' ||
+          text[i + 1] == '\n' ||
+          text[i + 1] == '"' ||
+          text[i + 1] == '"' ||
+          text[i + 1] == ')') {
+        final sentence = buffer.toString().trim();
+        if (sentence.isNotEmpty) {
+          sentences.add(sentence);
+        }
+        buffer.clear();
+        // 뒤따르는 공백/따옴표 스킵
+        while (i + 1 < text.length &&
+               (text[i + 1] == ' ' || text[i + 1] == '"' || text[i + 1] == '"')) {
+          i++;
+        }
       }
     }
-
-    // 자연스러운 분할 지점 찾기
-    final endIndex = startIndex + bestLength;
-    final actualEndIndex = endIndex >= text.length
-        ? text.length
-        : startIndex + _findTextBreakPoint(
-            text.substring(startIndex, endIndex),
-            bestLength,
-          );
-
-    final splitText = text.substring(startIndex, actualEndIndex).trim();
-
-    if (splitText.isNotEmpty) {
-      result.add(_ParagraphData.split(
-        index: paragraph.index,
-        chapterIndex: paragraph.chapterIndex,
-        html: '<p>$splitText</p>',
-        plainText: splitText,
-        requiresRichContent: false,
-      ));
-    }
-
-    startIndex = actualEndIndex;
-    splitPartIndex++;
-
-    // 무한 루프 방지
-    if (splitPartIndex > 100) break;
   }
 
-  return result.isEmpty ? [paragraph] : result;
+  // 남은 텍스트 처리
+  final remaining = buffer.toString().trim();
+  if (remaining.isNotEmpty) {
+    sentences.add(remaining);
+  }
+
+  return sentences;
 }
 
 List<dom.Element> _splitIntoBlockElements(dom.Element element) {
@@ -802,65 +736,105 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
     final currentPage = <_ParagraphData>[];
     double currentHeight = 0;
 
-    final settings = ref.read(settingsProvider);
-    final double paragraphSpacing = _paragraphSpacingFromStyle(style, settings);
     final totalParagraphs = paragraphs.length;
     final sw = Stopwatch()..start();
+
+    final fontSize = style.fontSize ?? 16.0;
+    final lineHeight = fontSize * (style.height ?? 1.5);
+    // 문단 사이 간격
+    final paragraphSpacing = fontSize * 0.8;
+    // 안전 마진 (5줄 높이)
+    final safeMaxHeight = maxHeight - (lineHeight * 5);
 
     for (var index = 0; index < totalParagraphs; index++) {
       if (generation != _paginationGeneration) return;
 
-      final originalParagraph = paragraphs[index];
+      final paragraph = paragraphs[index];
 
-      // 긴 문단인지 확인하고 필요시 분할
-      painter.text = TextSpan(text: originalParagraph.measurementText, style: style);
-      painter.layout(maxWidth: maxWidth);
-      final originalHeight = painter.height;
-
-      // 페이지 높이의 60%를 초과하면 분할
-      final List<_ParagraphData> paragraphsToProcess;
-      if (originalHeight > maxHeight * 0.60 && !originalParagraph.isWhitespaceOnly) {
-        paragraphsToProcess = _splitLongParagraph(
-          paragraph: originalParagraph,
-          painter: painter,
-          style: style,
-          maxWidth: maxWidth,
-          maxHeight: maxHeight,
-        );
+      // 문단 높이 측정
+      double paragraphHeight;
+      if (paragraph.isWhitespaceOnly) {
+        paragraphHeight = paragraphSpacing;
       } else {
-        paragraphsToProcess = [originalParagraph];
+        painter.text = TextSpan(text: paragraph.plainText, style: style);
+        painter.layout(maxWidth: maxWidth);
+        paragraphHeight = painter.height;
       }
 
-      // 분할된 (또는 원본) 문단들을 처리
-      for (final paragraph in paragraphsToProcess) {
-        final segment = paragraph.measurementText;
-        painter.text = TextSpan(text: segment, style: style);
-        painter.layout(maxWidth: maxWidth);
-        final double paragraphHeight =
-            paragraph.isWhitespaceOnly ? paragraphSpacing : painter.height;
+      // 문단 사이 간격 추가
+      final spacing = currentPage.isEmpty ? 0.0 : paragraphSpacing;
+      final nextHeight = currentHeight + paragraphHeight + spacing;
 
-        final additionalSpacing = currentPage.isEmpty ? 0.0 : paragraphSpacing;
-        final nextHeight = currentHeight + paragraphHeight + additionalSpacing;
-        final fits = nextHeight <= maxHeight || currentPage.isEmpty;
-        if (fits) {
-          currentHeight = nextHeight;
-          currentPage.add(paragraph);
-        } else {
+      // 페이지에 들어가는지 확인
+      if (nextHeight > safeMaxHeight) {
+        if (currentPage.isNotEmpty) {
+          // 현재 페이지 완료
           pages.add(_PageContent(List<_ParagraphData>.from(currentPage)));
-          currentPage
-            ..clear()
-            ..add(paragraph);
+          currentPage.clear();
+          currentHeight = 0;
+        }
+
+        // 문단이 너무 길면 문장 단위로 분할
+        if (paragraphHeight > safeMaxHeight && !paragraph.isWhitespaceOnly) {
+          final sentences = _splitIntoSentences(paragraph.plainText);
+          final sentenceBuffer = <String>[];
+          double bufferHeight = 0;
+
+          for (final sentence in sentences) {
+            // 문장 높이 측정
+            painter.text = TextSpan(text: sentence, style: style);
+            painter.layout(maxWidth: maxWidth);
+            final sentenceHeight = painter.height;
+
+            if (bufferHeight + sentenceHeight > safeMaxHeight && sentenceBuffer.isNotEmpty) {
+              // 현재 버퍼를 페이지로
+              final text = sentenceBuffer.join(' ');
+              pages.add(_PageContent([
+                _ParagraphData.split(
+                  index: paragraph.index,
+                  chapterIndex: paragraph.chapterIndex,
+                  html: '<p>$text</p>',
+                  plainText: text,
+                  requiresRichContent: false,
+                ),
+              ]));
+              sentenceBuffer.clear();
+              bufferHeight = 0;
+            }
+
+            sentenceBuffer.add(sentence);
+            bufferHeight += sentenceHeight;
+          }
+
+          // 남은 문장들은 현재 페이지에 추가
+          if (sentenceBuffer.isNotEmpty) {
+            final text = sentenceBuffer.join(' ');
+            painter.text = TextSpan(text: text, style: style);
+            painter.layout(maxWidth: maxWidth);
+            currentPage.add(_ParagraphData.split(
+              index: paragraph.index,
+              chapterIndex: paragraph.chapterIndex,
+              html: '<p>$text</p>',
+              plainText: text,
+              requiresRichContent: false,
+            ));
+            currentHeight = painter.height;
+          }
+        } else {
+          // 문단 통째로 새 페이지에 추가
+          currentPage.add(paragraph);
           currentHeight = paragraphHeight;
         }
+      } else {
+        // 현재 페이지에 문단 추가
+        currentPage.add(paragraph);
+        currentHeight = nextHeight;
       }
 
-      final progress =
-          totalParagraphs == 0 ? 1.0 : (index + 1) / totalParagraphs;
-      if (progress - _paginationProgress >= 0.05 ||
-          sw.elapsedMilliseconds > 50) {
+      final progress = totalParagraphs == 0 ? 1.0 : (index + 1) / totalParagraphs;
+      if (progress - _paginationProgress >= 0.05 || sw.elapsedMilliseconds > 50) {
         _paginationProgress = progress.clamp(0.0, 1.0);
-        widget.onLoadingProgress
-            ?.call(0.5 + progress * 0.5); // Second 50% for pagination
+        widget.onLoadingProgress?.call(0.5 + progress * 0.5);
         if (mounted) setState(() {});
         await Future.delayed(Duration.zero);
         sw.reset();
@@ -900,10 +874,6 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
         _scheduleScrollToPage(_lastProgress);
       }
     });
-  }
-
-  double _paragraphSpacingFromStyle(TextStyle style, ReaderSettings settings) {
-    return settings.actualParagraphSpacing;
   }
 
   List<Widget> _watermarkLayers() {

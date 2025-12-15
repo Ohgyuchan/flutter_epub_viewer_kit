@@ -90,7 +90,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return EpubReaderWidget(
-      source: const EpubSourceAsset('assets/sample.epub'),
+      source: const EpubSourceAsset('assets/example.epub'),
       controller: _controller,
       // Settings are automatically saved to device storage with this key
       // Set to null to disable auto-save
