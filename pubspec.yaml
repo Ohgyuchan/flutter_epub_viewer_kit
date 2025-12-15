@@ -1,0 +1,45 @@
+name: flutter_epub_viewer_kit
+description: A customizable EPUB reader widget for Flutter. Supports iOS, Android, and Web platforms with features like pagination, scrolling, bookmarks, and customizable themes.
+version: 0.0.1
+homepage: https://github.com/Pebbles-Pbbz/flutter_epub_viewer_kit
+repository: https://github.com/Pebbles-Pbbz/flutter_epub_viewer_kit
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.0.0"
+
+platforms:
+  android:
+  ios:
+  web:
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management (internal use)
+  flutter_riverpod: ^2.4.9
+
+  # EPUB viewer and parser
+  epub_view: ^3.1.0
+  epubx: ^4.0.0
+
+  # Google Fonts
+  google_fonts: ^6.2.1
+  flutter_html: ^3.0.0
+  scrollable_positioned_list: ^0.3.8
+  html: ^0.15.4
+
+  # HTTP for URL loading
+  http: ^1.2.0
+
+  # Settings persistence
+  shared_preferences: ^2.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
