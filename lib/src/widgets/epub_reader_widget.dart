@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:epub_view/src/data/epub_parser.dart' as epub_parser;
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:epubx/epubx.dart' as epubx;
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:html/dom.dart' as dom;
@@ -221,7 +220,7 @@ class _PageContent {
 ///   onPageChanged: (current, total) => print('Page $current of $total'),
 /// )
 /// ```
-class EpubReaderWidget extends StatelessWidget {
+class EpubReaderWidget extends StatefulWidget {
   /// Creates an EPUB reader widget.
   const EpubReaderWidget({
     super.key,
@@ -306,85 +305,16 @@ class EpubReaderWidget extends StatelessWidget {
   final String? settingsStorageKey;
 
   @override
-  Widget build(BuildContext context) {
-    // Use widget's initialSettings, or fall back to controller's initialSettings
-    final effectiveSettings = initialSettings ?? controller?.initialSettings;
-    final storage = settingsStorageKey != null
-        ? SettingsStorage(storageKey: settingsStorageKey)
-        : null;
-
-    return ProviderScope(
-      overrides: [
-        settingsProvider.overrideWith(
-          () => SettingsNotifier(
-            initialSettings: effectiveSettings,
-            storage: storage,
-          ),
-        ),
-      ],
-      child: _EpubReaderContent(
-        source: source,
-        controller: controller,
-        onPageChanged: onPageChanged,
-        onLoadingProgress: onLoadingProgress,
-        onError: onError,
-        onBookLoaded: onBookLoaded,
-        onMaxPageReached: onMaxPageReached,
-        showTopBar: showTopBar,
-        showBottomBar: showBottomBar,
-        topBarBuilder: topBarBuilder,
-        bottomBarBuilder: bottomBarBuilder,
-        title: title,
-        watermark: watermark,
-        maxReadablePages: maxReadablePages,
-      ),
-    );
-  }
+  State<EpubReaderWidget> createState() => _EpubReaderWidgetState();
 }
 
-class _EpubReaderContent extends ConsumerStatefulWidget {
-  const _EpubReaderContent({
-    required this.source,
-    this.controller,
-    this.onPageChanged,
-    this.onLoadingProgress,
-    this.onError,
-    this.onBookLoaded,
-    this.onMaxPageReached,
-    this.showTopBar = true,
-    this.showBottomBar = true,
-    this.topBarBuilder,
-    this.bottomBarBuilder,
-    this.title,
-    this.watermark,
-    this.maxReadablePages,
-  });
-
-  final EpubSource source;
-  final EpubReaderController? controller;
-  final OnPageChanged? onPageChanged;
-  final OnLoadingProgress? onLoadingProgress;
-  final OnError? onError;
-  final OnBookLoaded? onBookLoaded;
-  final OnMaxPageReached? onMaxPageReached;
-  final bool showTopBar;
-  final bool showBottomBar;
-  final PreferredSizeWidget Function(
-      BuildContext context, ReaderSettings settings)? topBarBuilder;
-  final Widget Function(BuildContext context, ReaderSettings settings)?
-      bottomBarBuilder;
-  final String? title;
-  final Widget? watermark;
-  final int? maxReadablePages;
-
-  @override
-  ConsumerState<_EpubReaderContent> createState() => _EpubReaderContentState();
-}
-
-class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
+class _EpubReaderWidgetState extends State<EpubReaderWidget> {
   final PageController _pageController = PageController();
   final ItemScrollController _scrollItemController = ItemScrollController();
   final ItemPositionsListener _scrollPositions = ItemPositionsListener.create();
+
+  late final SettingsNotifier _settingsNotifier;
+  bool? _previousIsPageMode;
 
   bool _showTopBar = true;
   bool _showBottomBar = true;
@@ -428,23 +358,66 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
     _showTopBar = widget.showTopBar;
     _showBottomBar = widget.showBottomBar;
     _scrollPositions.itemPositions.addListener(_handleScrollPositions);
+
+    // Initialize settings notifier
+    final effectiveSettings = widget.initialSettings ?? widget.controller?.initialSettings;
+    final storage = widget.settingsStorageKey != null
+        ? SettingsStorage(storageKey: widget.settingsStorageKey)
+        : null;
+    _settingsNotifier = SettingsNotifier(
+      initialSettings: effectiveSettings,
+      storage: storage,
+    );
+    _settingsNotifier.addListener(_onSettingsNotifierChanged);
+    _previousIsPageMode = _settingsNotifier.settings.isPageMode;
+
     // Initialize from controller
     final initialProgress = widget.controller?.initialProgress;
     if (initialProgress != null) {
       _lastProgress = initialProgress.clamp(0.0, 1.0);
     }
     _bindController();
+
     // Load saved settings from storage
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(settingsProvider.notifier).loadFromStorage();
+      _settingsNotifier.loadFromStorage();
     });
     _loadBookContent();
+  }
+
+  void _onSettingsNotifierChanged() {
+    final currentIsPageMode = _settingsNotifier.settings.isPageMode;
+    if (_previousIsPageMode != currentIsPageMode && _pages.isNotEmpty) {
+      _previousIsPageMode = currentIsPageMode;
+      if (currentIsPageMode) {
+        final targetPage = (_lastProgress * (_pages.length - 1)).round();
+        final page = targetPage.clamp(0, _pages.length - 1);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_pageController.hasClients) {
+            _pageController.jumpToPage(page);
+          }
+        });
+        setState(() {
+          _currentPageIndex = page;
+          _currentScrollPage = page + 1;
+        });
+      } else {
+        _scheduleScrollToPage(_lastProgress);
+      }
+    }
+    _previousIsPageMode = currentIsPageMode;
+    // Trigger rebuild when settings change
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
     _unbindController();
     _scrollPositions.itemPositions.removeListener(_handleScrollPositions);
+    _settingsNotifier.removeListener(_onSettingsNotifierChanged);
+    _settingsNotifier.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -456,7 +429,7 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
       onGoToPage: (page) => _goToPage(page),
       onGoToProgress: (progress) => _goToProgress(progress),
       onUpdateSettings: (settings) {
-        ref.read(settingsProvider.notifier).setSettings(settings);
+        _settingsNotifier.setSettings(settings);
       },
       onAddBookmark: _addBookmark,
       onRemoveBookmark: _removeBookmark,
@@ -465,14 +438,13 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
   }
 
   void _showSettingsModal() {
-    final container = ProviderScope.containerOf(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       useRootNavigator: false,
-      builder: (modalContext) => UncontrolledProviderScope(
-        container: container,
-        child: SettingsPanel(onSettingsChanged: _onSettingsChanged),
+      builder: (modalContext) => SettingsPanel(
+        settingsNotifier: _settingsNotifier,
+        onSettingsChanged: _onSettingsChanged,
       ),
     );
   }
@@ -523,7 +495,7 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
 
   void _updateControllerState() {
     widget.controller?.setPageInfo(_currentPageIndex, _pages.length);
-    widget.controller?.setSettings(ref.read(settingsProvider));
+    widget.controller?.setSettings(_settingsNotifier.settings);
     widget.controller?.setLoading(_loadedBook == null && _loadError == null);
 
     // Notify position change via controller callback
@@ -674,7 +646,7 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
       widget.onMaxPageReached?.call(_effectiveMaxPages, _pages.length);
     }
 
-    final settings = ref.read(settingsProvider);
+    final settings = _settingsNotifier.settings;
 
     if (settings.isPageMode) {
       if (_pageController.hasClients) {
@@ -848,7 +820,7 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
         ? 0
         : (_lastProgress * (totalPages - 1)).round().clamp(0, totalPages - 1);
 
-    final isPageMode = ref.read(settingsProvider).isPageMode;
+    final isPageMode = _settingsNotifier.settings.isPageMode;
 
     setState(() {
       _pages = pages;
@@ -1322,7 +1294,7 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
     final totalPages = max(1, _pages.length);
     final ratio = totalPages <= 1 ? 0.0 : pageIndex / (totalPages - 1);
 
-    final isPageMode = ref.read(settingsProvider).isPageMode;
+    final isPageMode = _settingsNotifier.settings.isPageMode;
     final readablePageCount = _effectiveMaxPages;
 
     if (pageIndex + 1 != _currentScrollPage ||
@@ -1454,27 +1426,7 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider);
-
-    ref.listen<ReaderSettings>(settingsProvider, (previous, next) {
-      if (previous?.isPageMode == next.isPageMode || _pages.isEmpty) return;
-
-      if (next.isPageMode) {
-        final targetPage = (_lastProgress * (_pages.length - 1)).round();
-        final page = targetPage.clamp(0, _pages.length - 1);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_pageController.hasClients) {
-            _pageController.jumpToPage(page);
-          }
-        });
-        setState(() {
-          _currentPageIndex = page;
-          _currentScrollPage = page + 1;
-        });
-      } else {
-        _scheduleScrollToPage(_lastProgress);
-      }
-    });
+    final settings = _settingsNotifier.settings;
 
     final topBar = _showTopBar
         ? (widget.topBarBuilder?.call(context, settings) ??
@@ -1565,7 +1517,7 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
   }
 
   void _previousPage() {
-    final settings = ref.read(settingsProvider);
+    final settings = _settingsNotifier.settings;
     if (settings.isPageMode) {
       if (_currentPageIndex > 0) {
         _pageController.previousPage(
@@ -1580,7 +1532,7 @@ class _EpubReaderContentState extends ConsumerState<_EpubReaderContent> {
   }
 
   void _nextPage() {
-    final settings = ref.read(settingsProvider);
+    final settings = _settingsNotifier.settings;
     final maxAllowed = _effectiveMaxPages;
 
     if (settings.isPageMode) {

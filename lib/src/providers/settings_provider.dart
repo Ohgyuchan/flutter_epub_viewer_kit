@@ -1,18 +1,18 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import '../models/reader_settings.dart';
 import '../utils/settings_storage.dart';
 
-class SettingsNotifier extends Notifier<ReaderSettings> {
-  SettingsNotifier({this.initialSettings, this.storage});
+class SettingsNotifier extends ChangeNotifier {
+  SettingsNotifier({
+    ReaderSettings? initialSettings,
+    this.storage,
+  }) : _settings = initialSettings ?? const ReaderSettings();
 
-  final ReaderSettings? initialSettings;
   final SettingsStorage? storage;
+  ReaderSettings _settings;
   bool _isInitialized = false;
 
-  @override
-  ReaderSettings build() {
-    return initialSettings ?? const ReaderSettings();
-  }
+  ReaderSettings get settings => _settings;
 
   Future<void> loadFromStorage() async {
     if (storage == null || _isInitialized) return;
@@ -20,87 +20,96 @@ class SettingsNotifier extends Notifier<ReaderSettings> {
 
     final saved = await storage!.load();
     if (saved != null) {
-      state = saved;
+      _settings = saved;
+      notifyListeners();
     }
   }
 
   void _saveToStorage() {
-    storage?.save(state);
+    storage?.save(_settings);
   }
 
   void setSettings(ReaderSettings settings) {
-    state = settings;
+    _settings = settings;
     _saveToStorage();
+    notifyListeners();
   }
 
   void setColorTheme(ColorTheme theme) {
-    state = state.copyWith(
+    _settings = _settings.copyWith(
       backgroundColor: theme.background,
       textColor: theme.text,
     );
     _saveToStorage();
+    notifyListeners();
   }
 
   void setFontFamily(String fontFamily) {
-    state = state.copyWith(fontFamily: fontFamily);
+    _settings = _settings.copyWith(fontFamily: fontFamily);
     _saveToStorage();
+    notifyListeners();
   }
 
   // fontSize: 1~9 (default: 4)
   void increaseFontSize() {
-    if (state.fontSize < 9) {
-      state = state.copyWith(fontSize: state.fontSize + 1);
+    if (_settings.fontSize < 9) {
+      _settings = _settings.copyWith(fontSize: _settings.fontSize + 1);
       _saveToStorage();
+      notifyListeners();
     }
   }
 
   void decreaseFontSize() {
-    if (state.fontSize > 1) {
-      state = state.copyWith(fontSize: state.fontSize - 1);
+    if (_settings.fontSize > 1) {
+      _settings = _settings.copyWith(fontSize: _settings.fontSize - 1);
       _saveToStorage();
+      notifyListeners();
     }
   }
 
   // lineSpacing: 1~5 (default: 2)
   void increaseLineSpacing() {
-    if (state.lineSpacing < 5) {
-      state = state.copyWith(lineSpacing: state.lineSpacing + 1);
+    if (_settings.lineSpacing < 5) {
+      _settings = _settings.copyWith(lineSpacing: _settings.lineSpacing + 1);
       _saveToStorage();
+      notifyListeners();
     }
   }
 
   void decreaseLineSpacing() {
-    if (state.lineSpacing > 1) {
-      state = state.copyWith(lineSpacing: state.lineSpacing - 1);
+    if (_settings.lineSpacing > 1) {
+      _settings = _settings.copyWith(lineSpacing: _settings.lineSpacing - 1);
       _saveToStorage();
+      notifyListeners();
     }
   }
 
   // margin: 1~5 (default: 1)
   void increaseMargin() {
-    if (state.margin < 5) {
-      state = state.copyWith(margin: state.margin + 1);
+    if (_settings.margin < 5) {
+      _settings = _settings.copyWith(margin: _settings.margin + 1);
       _saveToStorage();
+      notifyListeners();
     }
   }
 
   void decreaseMargin() {
-    if (state.margin > 1) {
-      state = state.copyWith(margin: state.margin - 1);
+    if (_settings.margin > 1) {
+      _settings = _settings.copyWith(margin: _settings.margin - 1);
       _saveToStorage();
+      notifyListeners();
     }
   }
 
   void toggleViewMode() {
-    state = state.copyWith(isPageMode: !state.isPageMode);
+    _settings = _settings.copyWith(isPageMode: !_settings.isPageMode);
     _saveToStorage();
+    notifyListeners();
   }
 
   void resetToDefault() {
-    state = const ReaderSettings();
+    _settings = const ReaderSettings();
     _saveToStorage();
+    notifyListeners();
   }
 }
-
-final settingsProvider =
-    NotifierProvider<SettingsNotifier, ReaderSettings>(SettingsNotifier.new);
