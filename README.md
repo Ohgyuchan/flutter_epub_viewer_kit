@@ -22,9 +22,13 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_epub_viewer_kit:
-    git:
-      url: git@github.com:Pebbles-Pbbz/flutter_epub_viewer_kit.git
+  flutter_epub_viewer_kit: ^0.0.2
+```
+
+Or run:
+
+```bash
+flutter pub add flutter_epub_viewer_kit
 ```
 
 ## Basic Usage
