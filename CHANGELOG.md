@@ -1,3 +1,8 @@
+## 0.0.3
+
+- Remove unused platform runners (linux, macos, windows)
+- Update README for pub.dev installation
+
 ## 0.0.2
 
 - Initial release

@@ -22,7 +22,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  flutter_epub_viewer_kit: ^0.0.2
+  flutter_epub_viewer_kit: ^0.0.3
 ```
 
 Or run:
