@@ -26,7 +26,7 @@ void main() {
   group('ReaderSettings', () {
     test('default settings are correct', () {
       const settings = ReaderSettings();
-      expect(settings.fontSize, 2);
+      expect(settings.fontSize, 4); // default: 4 (range: 1~9)
       expect(settings.isPageMode, true);
       expect(settings.lineSpacing, 2);
     });

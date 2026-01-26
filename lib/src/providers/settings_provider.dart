@@ -3,35 +3,29 @@ import '../models/reader_settings.dart';
 import '../utils/settings_storage.dart';
 
 class SettingsNotifier extends Notifier<ReaderSettings> {
-  ReaderSettings? _initialSettings;
-  SettingsStorage? _storage;
+  SettingsNotifier({this.initialSettings, this.storage});
+
+  final ReaderSettings? initialSettings;
+  final SettingsStorage? storage;
   bool _isInitialized = false;
-
-  void setInitialSettings(ReaderSettings settings) {
-    _initialSettings = settings;
-  }
-
-  void setStorage(SettingsStorage storage) {
-    _storage = storage;
-  }
 
   @override
   ReaderSettings build() {
-    return _initialSettings ?? const ReaderSettings();
+    return initialSettings ?? const ReaderSettings();
   }
 
   Future<void> loadFromStorage() async {
-    if (_storage == null || _isInitialized) return;
+    if (storage == null || _isInitialized) return;
     _isInitialized = true;
 
-    final saved = await _storage!.load();
+    final saved = await storage!.load();
     if (saved != null) {
       state = saved;
     }
   }
 
   void _saveToStorage() {
-    _storage?.save(state);
+    storage?.save(state);
   }
 
   void setSettings(ReaderSettings settings) {

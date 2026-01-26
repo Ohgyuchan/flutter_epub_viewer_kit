@@ -315,16 +315,12 @@ class EpubReaderWidget extends StatelessWidget {
 
     return ProviderScope(
       overrides: [
-        settingsProvider.overrideWith(() {
-          final settingsNotifier = SettingsNotifier();
-          if (effectiveSettings != null) {
-            settingsNotifier.setInitialSettings(effectiveSettings);
-          }
-          if (storage != null) {
-            settingsNotifier.setStorage(storage);
-          }
-          return settingsNotifier;
-        }),
+        settingsProvider.overrideWith(
+          () => SettingsNotifier(
+            initialSettings: effectiveSettings,
+            storage: storage,
+          ),
+        ),
       ],
       child: _EpubReaderContent(
         source: source,
