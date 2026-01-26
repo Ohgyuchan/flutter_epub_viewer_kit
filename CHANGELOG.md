@@ -1,3 +1,9 @@
+## 0.0.5
+
+- Remove flutter_riverpod dependency to prevent version conflicts with user apps
+- Replace Riverpod with Flutter's built-in ChangeNotifier for internal state management
+- Remove unused bookmarks_provider.dart
+
 ## 0.0.3
 
 - Remove unused platform runners (linux, macos, windows)
