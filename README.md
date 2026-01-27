@@ -16,17 +16,6 @@ A customizable EPUB reader widget for Flutter. Supports iOS, Android, and Web pl
 - **Automatic settings persistence** - Reader settings are automatically saved to device storage
 - Max readable pages limit (for preview/trial mode)
 
-## Installation
-
-Add to your `pubspec.yaml`:
-
-```yaml
-dependencies:
-  flutter_epub_viewer_kit: ^0.0.3
-```
-
-Or run:
-
 ```bash
 flutter pub add flutter_epub_viewer_kit
 ```
@@ -247,6 +236,7 @@ EpubReaderWidget(
 ```
 
 Settings are automatically:
+
 - Loaded when the widget initializes
 - Saved whenever settings change (theme, font, margin, etc.)
 - Restored on app restart
