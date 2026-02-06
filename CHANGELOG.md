@@ -1,3 +1,9 @@
+## 0.0.6
+
+- Add comprehensive example app with feature configuration screen
+- Add page/scroll mode toggle to settings panel
+- Example app demonstrates all widget features: source types, watermark, max pages, persistence, resume position, custom bars, initial bookmarks
+
 ## 0.0.5
 
 - Remove flutter_riverpod dependency to prevent version conflicts with user apps

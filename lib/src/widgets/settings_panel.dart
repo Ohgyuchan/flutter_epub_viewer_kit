@@ -153,6 +153,44 @@ class SettingsPanel extends StatelessWidget {
                   settings.textColor,
                 ),
                 const SizedBox(height: 16),
+                // Page/Scroll Mode Toggle
+                Row(
+                  children: [
+                    Text('보기 모드', style: TextStyle(color: settings.textColor)),
+                    const Spacer(),
+                    SegmentedButton<bool>(
+                      segments: [
+                        ButtonSegment(
+                          value: true,
+                          label: Text(
+                            '페이지',
+                            style: TextStyle(color: settings.textColor),
+                          ),
+                          icon: Icon(Icons.auto_stories, color: settings.textColor),
+                        ),
+                        ButtonSegment(
+                          value: false,
+                          label: Text(
+                            '스크롤',
+                            style: TextStyle(color: settings.textColor),
+                          ),
+                          icon: Icon(Icons.view_day, color: settings.textColor),
+                        ),
+                      ],
+                      selected: {settings.isPageMode},
+                      onSelectionChanged: (value) {
+                        settingsNotifier.toggleViewMode();
+                        onSettingsChanged();
+                      },
+                      style: ButtonStyle(
+                        side: WidgetStatePropertyAll(
+                          BorderSide(color: settings.textColor.withValues(alpha: 0.3)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 // Reset Button
                 TextButton.icon(
                   onPressed: () {

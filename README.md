@@ -2,6 +2,8 @@
 
 A customizable EPUB reader widget for Flutter. Supports iOS, Android, and Web platforms with features like pagination, bookmarks, and customizable themes.
 
+![example.git](example.gif)
+
 ## Features
 
 - EPUB file loading from assets, files, URLs, or bytes

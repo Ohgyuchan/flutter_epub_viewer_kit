@@ -1,6 +1,6 @@
 name: flutter_epub_viewer_kit
 description: A customizable EPUB reader widget for Flutter. Supports iOS, Android, and Web platforms with features like pagination, scrolling, bookmarks, and customizable themes.
-version: 0.0.5
+version: 0.0.6
 homepage: https://github.com/Ohgyuchan/flutter_epub_viewer_kit
 repository: https://github.com/Ohgyuchan/flutter_epub_viewer_kit
 
