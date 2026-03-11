@@ -1,3 +1,14 @@
+## 0.0.7
+
+- Fix pagination density: pages no longer show only 1-2 lines or half-empty content
+- Add `_ParagraphType` classification (plainText, dialogue, richContent, spacing) for accurate per-type measurement and rendering
+- Fix dialogue table rendering: measure and render with matching two-column layout (name + text)
+- Fix `requiresRichContent` always being true — plain text paragraphs now use `Text` widget instead of `Html`
+- Preserve spacing paragraphs (`&#160;`) for proper section gaps
+- Split multi-row dialogue tables into individual paragraph items
+- Reduce safe margin from 2x to 1x line height for better page utilization
+- Remove unsupported platform files (linux, macos, windows) from example app
+
 ## 0.0.6
 
 - Add comprehensive example app with feature configuration screen

@@ -33,6 +33,8 @@ typedef OnBookLoaded = void Function(String? title, String? author);
 /// Callback when max readable page limit is reached.
 typedef OnMaxPageReached = void Function(int maxPage, int totalPages);
 
+enum _ParagraphType { plainText, dialogue, richContent, spacing }
+
 class _ParagraphData {
   _ParagraphData({
     required this.index,
@@ -41,7 +43,22 @@ class _ParagraphData {
   })  : _element = element,
         html = element.outerHtml,
         plainText = element.text.trim(),
-        requiresRichContent = element.outerHtml != element.text;
+        dialogueName = null,
+        dialogueText = null {
+    final text = element.text.trim();
+    if (text.isEmpty || text == '\u00A0') {
+      type = _ParagraphType.spacing;
+    } else if (_isDialogueTable(element)) {
+      type = _ParagraphType.dialogue;
+      final tds = element.getElementsByTagName('td');
+      dialogueName = tds.isNotEmpty ? tds.first.text.trim() : null;
+      dialogueText = tds.length >= 2 ? tds[1].text.trim() : null;
+    } else if (element.getElementsByTagName('img').isNotEmpty) {
+      type = _ParagraphType.richContent;
+    } else {
+      type = _ParagraphType.plainText;
+    }
+  }
 
   /// 긴 문단 분할용 생성자
   _ParagraphData.split({
@@ -49,22 +66,69 @@ class _ParagraphData {
     required this.chapterIndex,
     required this.html,
     required this.plainText,
-    required this.requiresRichContent,
     dom.Element? element,
-  }) : _element = element;
+  })  : _element = element,
+        type = _ParagraphType.plainText,
+        dialogueName = null,
+        dialogueText = null;
+
+  /// 대화 테이블 행 분할용 생성자
+  _ParagraphData.dialogue({
+    required this.index,
+    required this.chapterIndex,
+    required this.dialogueName,
+    required this.dialogueText,
+  })  : _element = null,
+        type = _ParagraphType.dialogue,
+        html = '<p>${dialogueName ?? ''} ${dialogueText ?? ''}</p>',
+        plainText = '${dialogueName ?? ''} ${dialogueText ?? ''}';
 
   final int index;
   final int chapterIndex;
   final String html;
   final String plainText;
-  final bool requiresRichContent;
+  late final _ParagraphType type;
+  String? dialogueName;
+  String? dialogueText;
   final dom.Element? _element;
 
   String get measurementText => plainText.isEmpty ? ' ' : plainText;
 
-  bool get isWhitespaceOnly => plainText.isEmpty && !requiresRichContent;
+  bool get isWhitespaceOnly => type == _ParagraphType.spacing;
 
   dom.Element? cloneElement() => _element?.clone(true);
+
+  static bool _isDialogueTable(dom.Element element) {
+    final tag = element.localName?.toLowerCase();
+    if (tag == 'table') {
+      final rows = element.getElementsByTagName('tr');
+      return rows.length == 1 && element.getElementsByTagName('td').length >= 2;
+    }
+    return false;
+  }
+}
+
+void _stripFontStyles(dom.Element element) {
+  final style = element.attributes['style'];
+  if (style != null) {
+    final declarations = style
+        .split(';')
+        .map((d) => d.trim())
+        .where((d) => d.isNotEmpty)
+        .where((d) {
+          final prop = d.split(':').first.trim().toLowerCase();
+          return prop != 'font-size' && prop != 'font-family';
+        })
+        .join('; ');
+    if (declarations.isEmpty) {
+      element.attributes.remove('style');
+    } else {
+      element.attributes['style'] = declarations;
+    }
+  }
+  for (final child in element.children) {
+    _stripFontStyles(child);
+  }
 }
 
 /// 텍스트를 문장 단위로 분리
@@ -566,8 +630,6 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
           if (blockElements.length > 1) {
             for (var j = 0; j < blockElements.length; j++) {
               final blockElement = blockElements[j];
-              final testText = blockElement.text.trim();
-              if (testText.isEmpty) continue;
 
               final paragraphDataItem = _ParagraphData(
                 index: globalIndex++,
@@ -575,7 +637,30 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
                 element: blockElement,
               );
 
-              if (!paragraphDataItem.isWhitespaceOnly &&
+              // 다중 행 테이블을 개별 dialogue로 분할
+              if (paragraphDataItem.type == _ParagraphType.richContent ||
+                  paragraphDataItem.type == _ParagraphType.plainText) {
+                final tableTag = blockElement.localName?.toLowerCase();
+                if (tableTag == 'table') {
+                  final rows = blockElement.getElementsByTagName('tr');
+                  if (rows.length > 1) {
+                    for (final row in rows) {
+                      final tds = row.getElementsByTagName('td');
+                      if (tds.length >= 2) {
+                        paragraphData.add(_ParagraphData.dialogue(
+                          index: globalIndex++,
+                          chapterIndex: paragraph.chapterIndex,
+                          dialogueName: tds[0].text.trim(),
+                          dialogueText: tds[1].text.trim(),
+                        ));
+                      }
+                    }
+                    continue;
+                  }
+                }
+              }
+
+              if (paragraphDataItem.type == _ParagraphType.spacing ||
                   paragraphDataItem.plainText.isNotEmpty) {
                 paragraphData.add(paragraphDataItem);
               }
@@ -586,7 +671,30 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
               chapterIndex: paragraph.chapterIndex,
               element: clonedElement,
             );
-            if (!paragraphDataItem.isWhitespaceOnly &&
+
+            // 다중 행 테이블을 개별 dialogue로 분할
+            final tableTag = clonedElement.localName?.toLowerCase();
+            if (tableTag == 'table' &&
+                (paragraphDataItem.type == _ParagraphType.richContent ||
+                 paragraphDataItem.type == _ParagraphType.plainText)) {
+              final rows = clonedElement.getElementsByTagName('tr');
+              if (rows.length > 1) {
+                for (final row in rows) {
+                  final tds = row.getElementsByTagName('td');
+                  if (tds.length >= 2) {
+                    paragraphData.add(_ParagraphData.dialogue(
+                      index: globalIndex++,
+                      chapterIndex: paragraph.chapterIndex,
+                      dialogueName: tds[0].text.trim(),
+                      dialogueText: tds[1].text.trim(),
+                    ));
+                  }
+                }
+                continue;
+              }
+            }
+
+            if (paragraphDataItem.type == _ParagraphType.spacing ||
                 paragraphDataItem.plainText.isNotEmpty) {
               paragraphData.add(paragraphDataItem);
             }
@@ -711,22 +819,39 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
     final lineHeight = fontSize * (style.height ?? 1.5);
     // 문단 사이 간격
     final paragraphSpacing = fontSize * 0.8;
-    // 안전 마진 (5줄 높이)
-    final safeMaxHeight = maxHeight - (lineHeight * 5);
+    // 안전 마진 (1줄 높이)
+    final safeMaxHeight = maxHeight - lineHeight;
 
     for (var index = 0; index < totalParagraphs; index++) {
       if (generation != _paginationGeneration) return;
 
       final paragraph = paragraphs[index];
 
-      // 문단 높이 측정
+      // 타입별 높이 측정
       double paragraphHeight;
-      if (paragraph.isWhitespaceOnly) {
-        paragraphHeight = paragraphSpacing;
-      } else {
-        painter.text = TextSpan(text: paragraph.plainText, style: style);
-        painter.layout(maxWidth: maxWidth);
-        paragraphHeight = painter.height;
+      switch (paragraph.type) {
+        case _ParagraphType.spacing:
+          paragraphHeight = paragraphSpacing;
+
+        case _ParagraphType.plainText:
+          painter.text = TextSpan(text: paragraph.measurementText, style: style);
+          painter.layout(maxWidth: maxWidth);
+          paragraphHeight = painter.height;
+
+        case _ParagraphType.dialogue:
+          final nameColWidth = _parseNameColumnWidth(paragraph, fontSize);
+          final dialogueWidth = (maxWidth - nameColWidth).clamp(0.0, maxWidth);
+          painter.text = TextSpan(text: paragraph.dialogueText ?? '', style: style);
+          painter.layout(maxWidth: dialogueWidth);
+          final textH = painter.height;
+          painter.text = TextSpan(text: paragraph.dialogueName ?? '', style: style);
+          painter.layout(maxWidth: nameColWidth);
+          paragraphHeight = max(textH, painter.height);
+
+        case _ParagraphType.richContent:
+          painter.text = TextSpan(text: paragraph.measurementText, style: style);
+          painter.layout(maxWidth: maxWidth);
+          paragraphHeight = painter.height * 1.2;
       }
 
       // 문단 사이 간격 추가
@@ -744,6 +869,11 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
 
         // 문단이 너무 길면 문장 단위로 분할
         if (paragraphHeight > safeMaxHeight && !paragraph.isWhitespaceOnly) {
+          if (paragraph.type != _ParagraphType.plainText) {
+            // dialogue/richContent: 별도 페이지에 배치 (진짜 긴 콘텐츠만)
+            pages.add(_PageContent([paragraph]));
+            continue;
+          }
           final sentences = _splitIntoSentences(paragraph.plainText);
           final sentenceBuffer = <String>[];
           double bufferHeight = 0;
@@ -763,7 +893,6 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
                   chapterIndex: paragraph.chapterIndex,
                   html: '<p>$text</p>',
                   plainText: text,
-                  requiresRichContent: false,
                 ),
               ]));
               sentenceBuffer.clear();
@@ -784,7 +913,6 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
               chapterIndex: paragraph.chapterIndex,
               html: '<p>$text</p>',
               plainText: text,
-              requiresRichContent: false,
             ));
             currentHeight = painter.height;
           }
@@ -1183,46 +1311,79 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
   }) {
     final spacing = isLast ? 0.0 : _paragraphSpacingForSettings(settings);
 
-    if (paragraph.isWhitespaceOnly) {
-      return spacing <= 0 ? const SizedBox.shrink() : SizedBox(height: spacing);
-    }
-
     Widget content;
-    if (!paragraph.requiresRichContent) {
-      if (paragraph.plainText.isEmpty) {
-        content = const SizedBox.shrink();
-      } else {
-        content = Text(
-          paragraph.plainText,
-          style: settings.textStyle,
-          textAlign: TextAlign.start,
-          softWrap: true,
+    switch (paragraph.type) {
+      case _ParagraphType.spacing:
+        final h = _paragraphSpacingForSettings(settings);
+        return SizedBox(height: h > 0 ? h : 8.0);
+
+      case _ParagraphType.plainText:
+        if (paragraph.plainText.isEmpty) {
+          content = const SizedBox.shrink();
+        } else {
+          content = Text(
+            paragraph.plainText,
+            style: settings.textStyle,
+            textAlign: TextAlign.start,
+            softWrap: true,
+          );
+        }
+
+      case _ParagraphType.dialogue:
+        final nameColWidth = 4.58 * settings.actualFontSize;
+        content = Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: nameColWidth,
+              child: Text(paragraph.dialogueName ?? '', style: settings.textStyle),
+            ),
+            Expanded(
+              child: Text(paragraph.dialogueText ?? '', style: settings.textStyle),
+            ),
+          ],
         );
-      }
-    } else {
-      if (paragraph.html.isEmpty || paragraph.html.trim().isEmpty) {
-        content = const SizedBox.shrink();
-      } else {
-        try {
-          final element = paragraph.cloneElement();
-          if (element != null) {
-            element.classes.add('paragraph-root');
-            content = RepaintBoundary(
-              child: ClipRect(
-                child: Html.fromElement(
-                  documentElement: element,
-                  style: {
-                    '.paragraph-root': Style(
-                      margin: Margins.zero,
-                      padding: HtmlPaddings.zero,
-                    ).merge(Style.fromTextStyle(settings.textStyle)),
-                  },
-                  extensions: _buildHtmlExtensions(_loadedBook),
+
+      case _ParagraphType.richContent:
+        if (paragraph.html.isEmpty || paragraph.html.trim().isEmpty) {
+          content = const SizedBox.shrink();
+        } else {
+          try {
+            final element = paragraph.cloneElement();
+            if (element != null) {
+              _stripFontStyles(element);
+              element.classes.add('paragraph-root');
+              content = RepaintBoundary(
+                child: ClipRect(
+                  child: Html.fromElement(
+                    documentElement: element,
+                    style: {
+                      '*': Style(
+                        fontSize: FontSize(settings.actualFontSize),
+                        fontFamily: settings.fontFamily,
+                        lineHeight: LineHeight(settings.actualLineHeight),
+                        color: settings.textColor,
+                      ),
+                      '.paragraph-root': Style(
+                        margin: Margins.zero,
+                        padding: HtmlPaddings.zero,
+                      ).merge(Style.fromTextStyle(settings.textStyle)),
+                    },
+                    extensions: _buildHtmlExtensions(_loadedBook),
+                  ),
                 ),
-              ),
-            );
-          } else {
-            // 분할된 문단은 plainText로 렌더링
+              );
+            } else {
+              content = paragraph.plainText.isEmpty
+                  ? const SizedBox.shrink()
+                  : Text(
+                      paragraph.plainText,
+                      style: settings.textStyle,
+                      textAlign: TextAlign.start,
+                      softWrap: true,
+                    );
+            }
+          } catch (e) {
             content = paragraph.plainText.isEmpty
                 ? const SizedBox.shrink()
                 : Text(
@@ -1232,27 +1393,13 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
                     softWrap: true,
                   );
           }
-        } catch (e) {
-          content = paragraph.plainText.isEmpty
-              ? const SizedBox.shrink()
-              : Text(
-                  paragraph.plainText,
-                  style: settings.textStyle,
-                  textAlign: TextAlign.start,
-                  softWrap: true,
-                );
         }
-      }
     }
 
     if (spacing <= 0) return content;
 
     return Padding(
-      padding: EdgeInsets.only(
-        left: spacing,
-        right: spacing,
-        bottom: spacing,
-      ),
+      padding: EdgeInsets.only(bottom: spacing),
       child: content,
     );
   }
@@ -1514,6 +1661,10 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
 
   double _paragraphSpacingForSettings(ReaderSettings settings) {
     return settings.actualParagraphSpacing;
+  }
+
+  double _parseNameColumnWidth(_ParagraphData paragraph, double fontSize) {
+    return 4.58 * fontSize;
   }
 
   void _previousPage() {

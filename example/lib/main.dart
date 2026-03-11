@@ -69,8 +69,9 @@ class _HomePageState extends State<HomePage> {
   bool _useCustomBars = true;
   bool _enablePersistence = true;
   bool _enableMaxPages = false;
-  final TextEditingController _maxPagesController =
-      TextEditingController(text: '5');
+  final TextEditingController _maxPagesController = TextEditingController(
+    text: '5',
+  );
   bool _isPageMode = true;
   double _resumeProgress = 0.0;
   bool _loadInitialBookmarks = false;
@@ -82,8 +83,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openReader() {
-    final maxPages =
-        int.tryParse(_maxPagesController.text) ?? 5;
+    final maxPages = int.tryParse(_maxPagesController.text) ?? 5;
 
     final config = ReaderConfig(
       sourceType: _sourceType,
@@ -97,9 +97,9 @@ class _HomePageState extends State<HomePage> {
       loadInitialBookmarks: _loadInitialBookmarks,
     );
 
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ReaderPage(config: config)),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => ReaderPage(config: config)));
   }
 
   @override
@@ -124,8 +124,7 @@ class _HomePageState extends State<HomePage> {
                 ButtonSegment(value: SourceType.bytes, label: Text('Bytes')),
               ],
               selected: {_sourceType},
-              onSelectionChanged: (v) =>
-                  setState(() => _sourceType = v.first),
+              onSelectionChanged: (v) => setState(() => _sourceType = v.first),
             ),
           ),
 
@@ -138,8 +137,7 @@ class _HomePageState extends State<HomePage> {
                 ButtonSegment(value: false, label: Text('Scroll')),
               ],
               selected: {_isPageMode},
-              onSelectionChanged: (v) =>
-                  setState(() => _isPageMode = v.first),
+              onSelectionChanged: (v) => setState(() => _isPageMode = v.first),
             ),
           ),
 
@@ -159,9 +157,7 @@ class _HomePageState extends State<HomePage> {
             title: 'Custom Top/Bottom Bars',
             child: SwitchListTile(
               title: const Text('Use custom bars'),
-              subtitle: const Text(
-                'Off = use default built-in bars',
-              ),
+              subtitle: const Text('Off = use default built-in bars'),
               value: _useCustomBars,
               onChanged: (v) => setState(() => _useCustomBars = v),
               contentPadding: EdgeInsets.zero,
@@ -173,9 +169,7 @@ class _HomePageState extends State<HomePage> {
             title: 'Settings Persistence',
             child: SwitchListTile(
               title: const Text('Persist settings to device'),
-              subtitle: const Text(
-                'Uses SharedPreferences when enabled',
-              ),
+              subtitle: const Text('Uses SharedPreferences when enabled'),
               value: _enablePersistence,
               onChanged: (v) => setState(() => _enablePersistence = v),
               contentPadding: EdgeInsets.zero,
@@ -189,9 +183,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 SwitchListTile(
                   title: const Text('Limit readable pages'),
-                  subtitle: const Text(
-                    'Simulates preview/trial mode',
-                  ),
+                  subtitle: const Text('Simulates preview/trial mode'),
                   value: _enableMaxPages,
                   onChanged: (v) => setState(() => _enableMaxPages = v),
                   contentPadding: EdgeInsets.zero,
@@ -243,9 +235,7 @@ class _HomePageState extends State<HomePage> {
             title: 'Initial Bookmarks',
             child: SwitchListTile(
               title: const Text('Pre-load sample bookmarks'),
-              subtitle: const Text(
-                'Adds bookmarks at pages 1, 3, 5',
-              ),
+              subtitle: const Text('Adds bookmarks at pages 1, 3, 5'),
               value: _loadInitialBookmarks,
               onChanged: (v) => setState(() => _loadInitialBookmarks = v),
               contentPadding: EdgeInsets.zero,
@@ -379,7 +369,7 @@ class _ReaderPageState extends State<ReaderPage> {
     switch (widget.config.sourceType) {
       case SourceType.asset:
         setState(() {
-          _source = const EpubSourceAsset('assets/example.epub');
+          _source = const EpubSourceAsset('assets/639.epub');
         });
       case SourceType.url:
         setState(() {
@@ -400,9 +390,9 @@ class _ReaderPageState extends State<ReaderPage> {
         } catch (e) {
           if (mounted) {
             setState(() => _loadingSource = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to load bytes: $e')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Failed to load bytes: $e')));
           }
         }
     }
@@ -422,9 +412,7 @@ class _ReaderPageState extends State<ReaderPage> {
   @override
   Widget build(BuildContext context) {
     if (_loadingSource || _source == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final config = widget.config;
@@ -432,8 +420,9 @@ class _ReaderPageState extends State<ReaderPage> {
     return EpubReaderWidget(
       source: _source!,
       controller: _controller,
-      settingsStorageKey:
-          config.enablePersistence ? 'epub_reader_settings' : null,
+      settingsStorageKey: config.enablePersistence
+          ? 'epub_reader_settings'
+          : null,
       initialSettings: ReaderSettings(isPageMode: config.isPageMode),
       showTopBar: true,
       showBottomBar: true,
@@ -456,7 +445,9 @@ class _ReaderPageState extends State<ReaderPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Loaded: ${title ?? "Unknown"} by ${author ?? "Unknown"}'),
+              content: Text(
+                'Loaded: ${title ?? "Unknown"} by ${author ?? "Unknown"}',
+              ),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -465,9 +456,9 @@ class _ReaderPageState extends State<ReaderPage> {
       onError: (error) {
         debugPrint('Error: $error');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $error')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $error')));
         }
       },
     );
@@ -611,9 +602,7 @@ class _ReaderPageState extends State<ReaderPage> {
             final bookmark = bookmarks[index];
             return ListTile(
               leading: const Icon(Icons.bookmark),
-              title: Text(
-                bookmark.title ?? 'Page ${bookmark.pageIndex + 1}',
-              ),
+              title: Text(bookmark.title ?? 'Page ${bookmark.pageIndex + 1}'),
               subtitle: bookmark.excerpt != null
                   ? Text(
                       bookmark.excerpt!,

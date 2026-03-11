@@ -47,3 +47,5 @@ app.*.map.json
 
 docs/
 CLAUDE.md
+
+*.epub
