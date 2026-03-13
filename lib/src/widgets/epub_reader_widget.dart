@@ -45,16 +45,23 @@ class _ParagraphData {
         plainText = element.text.trim(),
         dialogueName = null,
         dialogueText = null {
+    final tag = element.localName?.toLowerCase() ?? '';
+    final hasImage = tag == 'img' ||
+        tag == 'image' ||
+        tag == 'svg' ||
+        element.getElementsByTagName('img').isNotEmpty ||
+        element.getElementsByTagName('image').isNotEmpty ||
+        element.getElementsByTagName('svg').isNotEmpty;
     final text = element.text.trim();
-    if (text.isEmpty || text == '\u00A0') {
+    if (hasImage) {
+      type = _ParagraphType.richContent;
+    } else if (text.isEmpty || text == '\u00A0') {
       type = _ParagraphType.spacing;
     } else if (_isDialogueTable(element)) {
       type = _ParagraphType.dialogue;
       final tds = element.getElementsByTagName('td');
       dialogueName = tds.isNotEmpty ? tds.first.text.trim() : null;
       dialogueText = tds.length >= 2 ? tds[1].text.trim() : null;
-    } else if (element.getElementsByTagName('img').isNotEmpty) {
-      type = _ParagraphType.richContent;
     } else {
       type = _ParagraphType.plainText;
     }
@@ -212,6 +219,9 @@ List<dom.Element> _splitIntoBlockElements(dom.Element element) {
     'td',
     'th',
     'br',
+    'img',
+    'image',
+    'svg',
   };
 
   const containerTags = {'section', 'div', 'article', 'aside', 'body'};
@@ -661,6 +671,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
               }
 
               if (paragraphDataItem.type == _ParagraphType.spacing ||
+                  paragraphDataItem.type == _ParagraphType.richContent ||
                   paragraphDataItem.plainText.isNotEmpty) {
                 paragraphData.add(paragraphDataItem);
               }
@@ -695,6 +706,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
             }
 
             if (paragraphDataItem.type == _ParagraphType.spacing ||
+                paragraphDataItem.type == _ParagraphType.richContent ||
                 paragraphDataItem.plainText.isNotEmpty) {
               paragraphData.add(paragraphDataItem);
             }
@@ -849,9 +861,19 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
           paragraphHeight = max(textH, painter.height);
 
         case _ParagraphType.richContent:
-          painter.text = TextSpan(text: paragraph.measurementText, style: style);
-          painter.layout(maxWidth: maxWidth);
-          paragraphHeight = painter.height * 1.2;
+          final hasImg = paragraph.html.contains('<img') ||
+              paragraph.html.contains('<image') ||
+              paragraph.html.contains('<svg');
+          if (hasImg) {
+            // 이미지가 포함된 경우 페이지 전체 높이를 차지하도록 설정
+            // (이미지 하나당 한 페이지)
+            paragraphHeight = safeMaxHeight + 1;
+          } else {
+            painter.text =
+                TextSpan(text: paragraph.measurementText, style: style);
+            painter.layout(maxWidth: maxWidth);
+            paragraphHeight = painter.height * 1.2;
+          }
       }
 
       // 문단 사이 간격 추가
@@ -1349,9 +1371,16 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
           content = const SizedBox.shrink();
         } else {
           try {
-            final element = paragraph.cloneElement();
+            var element = paragraph.cloneElement();
             if (element != null) {
               _stripFontStyles(element);
+              // img/image/svg 단독 요소는 div로 감싸서 flutter_html이 올바르게 처리하도록 함
+              final elTag = element.localName?.toLowerCase() ?? '';
+              if (elTag == 'img' || elTag == 'image' || elTag == 'svg') {
+                final wrapper = dom.Element.tag('div');
+                wrapper.append(element);
+                element = wrapper;
+              }
               element.classes.add('paragraph-root');
               content = RepaintBoundary(
                 child: ClipRect(
@@ -1367,7 +1396,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
                       '.paragraph-root': Style(
                         margin: Margins.zero,
                         padding: HtmlPaddings.zero,
-                      ).merge(Style.fromTextStyle(settings.textStyle)),
+                      ),
                     },
                     extensions: _buildHtmlExtensions(_loadedBook),
                   ),
@@ -1416,14 +1445,49 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
         builder: (context) {
           final rawSrc = context.attributes['src'];
           if (rawSrc == null) return const SizedBox();
-          final normalized = rawSrc.replaceAll('../', '');
-          final imageFile = images[normalized];
-          final bytes = imageFile?.Content;
+          final bytes = _resolveImageBytes(rawSrc, images);
           if (bytes == null) return const SizedBox();
-          return Image.memory(Uint8List.fromList(bytes));
+          return Image.memory(
+            Uint8List.fromList(bytes),
+            fit: BoxFit.contain,
+          );
         },
       ),
     ];
+  }
+
+  /// EPUB 이미지 경로를 다양한 방식으로 매칭하여 바이트 데이터를 반환
+  List<int>? _resolveImageBytes(
+    String rawSrc,
+    Map<String, epubx.EpubByteContentFile> images,
+  ) {
+    // 직접 매칭
+    final direct = images[rawSrc];
+    if (direct?.Content != null) return direct!.Content;
+
+    // ../ 제거 후 매칭
+    final normalized = rawSrc.replaceAll('../', '').replaceAll('./', '');
+    final normed = images[normalized];
+    if (normed?.Content != null) return normed!.Content;
+
+    // 파일명만으로 매칭 (경로 구조가 다를 수 있음)
+    final fileName = rawSrc.split('/').last;
+    for (final entry in images.entries) {
+      if (entry.key.endsWith(fileName) || entry.key.split('/').last == fileName) {
+        if (entry.value.Content != null) return entry.value.Content;
+      }
+    }
+
+    // 대소문자 무시 매칭
+    final lowerNormalized = normalized.toLowerCase();
+    for (final entry in images.entries) {
+      if (entry.key.toLowerCase() == lowerNormalized ||
+          entry.key.toLowerCase().endsWith(lowerNormalized)) {
+        if (entry.value.Content != null) return entry.value.Content;
+      }
+    }
+
+    return null;
   }
 
   void _handleScrollPositions() {
