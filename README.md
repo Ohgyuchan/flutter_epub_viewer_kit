@@ -139,7 +139,7 @@ controller.isCurrentPageBookmarked;
 
 ## Localization
 
-The reader UI defaults to Korean. Use built-in presets or provide custom translations:
+All UI strings default to Korean for backwards compatibility. Use built-in presets or provide custom translations:
 
 ```dart
 // English
@@ -161,7 +161,7 @@ EpubReaderWidget(
     theme: 'Tema',
     font: 'Fuente',
     fontSize: 'Tamaño',
-    // ... all fields have Korean defaults
+    // ... all fields have Korean defaults, so you only need to override what you want
   ),
 );
 ```
@@ -181,6 +181,21 @@ EpubReaderWidget(
 | Russian | `russian` | 250M |
 | Japanese | `japanese` | 125M |
 | German | `german` | 100M |
+
+### Localized Strings
+
+All localizations cover the following UI elements:
+
+| Category | Fields |
+| --- | --- |
+| Settings labels | `theme`, `font`, `fontSize`, `lineSpacing`, `margin`, `viewMode` |
+| Mode labels | `pageMode`, `scrollMode`, `resetSettings` |
+| Font names | `fontNotoSans`, `fontSerif`, `fontSansSerif` |
+| Theme names | `themeWarm`, `themeGray`, `themeBlack`, `themeDark`, `themeGreen`, `themeBlueGray` |
+| Error messages | `loadFailed`, `unknownError`, `cannotLoadContent`, `checkFileFormat` |
+| Misc | `themeSampleChar` (character shown in theme color swatches) |
+
+You can also access theme names as an ordered list via `localization.themeNames`, which matches the `colorThemes` list order.
 
 ## Custom Top/Bottom Bars
 
@@ -361,16 +376,16 @@ EpubReaderWidget(
 
 ## Color Themes
 
-Built-in themes available via `colorThemes`:
+Built-in themes available via `colorThemes`. Theme names are localized via `EpubReaderLocalization`:
 
-| Name   | Background | Text    |
-| ------ | ---------- | ------- |
-| 따뜻함 | #FFFBF0    | Black   |
-| 회색   | #E8E8E8    | Black87 |
-| 검정   | Black      | White   |
-| 다크   | #1E1E1E    | #E0E0E0 |
-| 녹색   | #E8F5E9    | #1B5E20 |
-| 청회색 | #ECEFF1    | #263238 |
+| Korean | English | Background | Text |
+| --- | --- | --- | --- |
+| 따뜻함 | Warm | #FFFBF0 | Black |
+| 회색 | Gray | #E8E8E8 | Black87 |
+| 검정 | Black | #000000 | White |
+| 다크 | Dark | #1E1E1E | #E0E0E0 |
+| 녹색 | Green | #E8F5E9 | #1B5E20 |
+| 청회색 | Blue Gray | #ECEFF1 | #263238 |
 
 ## License
 
