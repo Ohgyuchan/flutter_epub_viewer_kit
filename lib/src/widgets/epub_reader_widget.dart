@@ -16,6 +16,7 @@ import '../models/reader_settings.dart';
 import '../providers/settings_provider.dart';
 import '../utils/epub_loader.dart';
 import '../utils/settings_storage.dart';
+import '../models/epub_reader_localization.dart';
 import 'settings_panel.dart';
 
 /// Callback when page changes.
@@ -314,6 +315,7 @@ class EpubReaderWidget extends StatefulWidget {
     this.watermark,
     this.maxReadablePages,
     this.settingsStorageKey = 'epub_reader_settings',
+    this.localization = const EpubReaderLocalization(),
   });
 
   /// The source of the EPUB file.
@@ -377,6 +379,12 @@ class EpubReaderWidget extends StatefulWidget {
   /// using this key. Defaults to 'epub_reader_settings'.
   /// Set to null to disable automatic persistence.
   final String? settingsStorageKey;
+
+  /// Localization strings for the reader UI.
+  ///
+  /// Defaults to Korean. Use [EpubReaderLocalization.english] for English,
+  /// or provide custom translations via the constructor.
+  final EpubReaderLocalization localization;
 
   @override
   State<EpubReaderWidget> createState() => _EpubReaderWidgetState();
@@ -519,6 +527,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
       builder: (modalContext) => SettingsPanel(
         settingsNotifier: _settingsNotifier,
         onSettingsChanged: _onSettingsChanged,
+        localization: widget.localization,
       ),
     );
   }
@@ -744,9 +753,13 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
       widget.onError?.call(errorMessage);
       widget.controller?.setError(errorMessage);
 
+      final displayError = e is EpubLoadException
+          ? e.message
+          : widget.localization.unknownError;
+
       if (mounted) {
         setState(() {
-          _loadError = errorMessage;
+          _loadError = displayError;
           _paragraphs = [];
           _pages = [];
         });
@@ -1180,7 +1193,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
             const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 16),
             Text(
-              '로드 실패',
+              widget.localization.loadFailed,
               style: TextStyle(
                 color: settings.textColor,
                 fontSize: 18,
@@ -1189,7 +1202,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
             ),
             const SizedBox(height: 8),
             Text(
-              _loadError ?? '알 수 없는 오류',
+              _loadError ?? widget.localization.unknownError,
               style: TextStyle(
                 color: settings.textColor.withValues(alpha: 0.7),
                 fontSize: 14,
@@ -1210,12 +1223,12 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
           const Icon(Icons.error_outline, size: 48, color: Colors.grey),
           const SizedBox(height: 16),
           Text(
-            '콘텐츠를 불러올 수 없습니다',
+            widget.localization.cannotLoadContent,
             style: TextStyle(color: settings.textColor),
           ),
           const SizedBox(height: 8),
           Text(
-            'EPUB 파일 형식을 확인해주세요',
+            widget.localization.checkFileFormat,
             style: TextStyle(
               color: settings.textColor.withValues(alpha: 0.6),
               fontSize: 12,

@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../models/epub_reader_localization.dart';
 import '../models/reader_settings.dart';
 import '../providers/settings_provider.dart';
 
 class SettingsPanel extends StatelessWidget {
   final SettingsNotifier settingsNotifier;
   final VoidCallback onSettingsChanged;
+  final EpubReaderLocalization localization;
 
   const SettingsPanel({
     super.key,
     required this.settingsNotifier,
     required this.onSettingsChanged,
+    this.localization = const EpubReaderLocalization(),
   });
 
   @override
@@ -46,7 +49,7 @@ class SettingsPanel extends StatelessWidget {
                 // Color Theme Selector
                 Row(
                   children: [
-                    Text('테마', style: TextStyle(color: settings.textColor)),
+                    Text(localization.theme, style: TextStyle(color: settings.textColor)),
                     const Spacer(),
                     ...colorThemes.map((theme) {
                       final isSelected =
@@ -72,7 +75,7 @@ class SettingsPanel extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              '가',
+                              localization.themeSampleChar,
                               style: TextStyle(
                                 color: theme.text,
                                 fontWeight: FontWeight.bold,
@@ -88,7 +91,7 @@ class SettingsPanel extends StatelessWidget {
                 // Font Family Selector
                 Row(
                   children: [
-                    Text('글꼴', style: TextStyle(color: settings.textColor)),
+                    Text(localization.font, style: TextStyle(color: settings.textColor)),
                     const Spacer(),
                     _buildFontButton(
                       'Noto Sans',
@@ -110,7 +113,7 @@ class SettingsPanel extends StatelessWidget {
                 const SizedBox(height: 16),
                 // Font Size Control (1~9)
                 _buildControlRow(
-                  '글자 크기',
+                  localization.fontSize,
                   settings.fontSize,
                   () {
                     settingsNotifier.decreaseFontSize();
@@ -125,7 +128,7 @@ class SettingsPanel extends StatelessWidget {
                 const SizedBox(height: 8),
                 // Line Spacing Control (1~5)
                 _buildControlRow(
-                  '줄 간격',
+                  localization.lineSpacing,
                   settings.lineSpacing,
                   () {
                     settingsNotifier.decreaseLineSpacing();
@@ -140,7 +143,7 @@ class SettingsPanel extends StatelessWidget {
                 const SizedBox(height: 8),
                 // Margin Control (1~5)
                 _buildControlRow(
-                  '여백',
+                  localization.margin,
                   settings.margin,
                   () {
                     settingsNotifier.decreaseMargin();
@@ -156,14 +159,14 @@ class SettingsPanel extends StatelessWidget {
                 // Page/Scroll Mode Toggle
                 Row(
                   children: [
-                    Text('보기 모드', style: TextStyle(color: settings.textColor)),
+                    Text(localization.viewMode, style: TextStyle(color: settings.textColor)),
                     const Spacer(),
                     SegmentedButton<bool>(
                       segments: [
                         ButtonSegment(
                           value: true,
                           label: Text(
-                            '페이지',
+                            localization.pageMode,
                             style: TextStyle(color: settings.textColor),
                           ),
                           icon: Icon(Icons.auto_stories, color: settings.textColor),
@@ -171,7 +174,7 @@ class SettingsPanel extends StatelessWidget {
                         ButtonSegment(
                           value: false,
                           label: Text(
-                            '스크롤',
+                            localization.scrollMode,
                             style: TextStyle(color: settings.textColor),
                           ),
                           icon: Icon(Icons.view_day, color: settings.textColor),
@@ -199,7 +202,7 @@ class SettingsPanel extends StatelessWidget {
                   },
                   icon: Icon(Icons.refresh, color: settings.textColor),
                   label: Text(
-                    '보기 설정 초기화',
+                    localization.resetSettings,
                     style: TextStyle(color: settings.textColor),
                   ),
                 ),
@@ -222,21 +225,21 @@ class SettingsPanel extends StatelessWidget {
 
     switch (fontFamily) {
       case 'Noto Sans':
-        displayText = 'Sans';
+        displayText = localization.fontNotoSans;
         textStyle = GoogleFonts.notoSans(
           color: settings.textColor,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         );
         break;
       case 'Nanum Myeongjo':
-        displayText = '명조';
+        displayText = localization.fontSerif;
         textStyle = GoogleFonts.nanumMyeongjo(
           color: settings.textColor,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         );
         break;
       case 'Nanum Gothic':
-        displayText = '고딕';
+        displayText = localization.fontSansSerif;
         textStyle = GoogleFonts.nanumGothic(
           color: settings.textColor,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

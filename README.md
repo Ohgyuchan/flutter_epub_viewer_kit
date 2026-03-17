@@ -17,6 +17,7 @@ A customizable EPUB reader widget for Flutter. Supports iOS, Android, and Web pl
 - Optional watermark overlay via custom widget
 - **Automatic settings persistence** - Reader settings are automatically saved to device storage
 - Max readable pages limit (for preview/trial mode)
+- **Multi-language localization** - Built-in support for 11 languages
 
 ```bash
 flutter pub add flutter_epub_viewer_kit
@@ -135,6 +136,51 @@ controller.bookmarks;        // List of bookmarks
 controller.currentSettings;  // Current ReaderSettings
 controller.isCurrentPageBookmarked;
 ```
+
+## Localization
+
+The reader UI defaults to Korean. Use built-in presets or provide custom translations:
+
+```dart
+// English
+EpubReaderWidget(
+  source: source,
+  localization: EpubReaderLocalization.english,
+);
+
+// Japanese
+EpubReaderWidget(
+  source: source,
+  localization: EpubReaderLocalization.japanese,
+);
+
+// Custom language
+EpubReaderWidget(
+  source: source,
+  localization: EpubReaderLocalization(
+    theme: 'Tema',
+    font: 'Fuente',
+    fontSize: 'Tamaño',
+    // ... all fields have Korean defaults
+  ),
+);
+```
+
+### Built-in Languages
+
+| Language | Constant | Speakers |
+| --- | --- | --- |
+| Korean | `korean` (default) | 80M |
+| English | `english` | 1.5B |
+| Chinese (Simplified) | `chinese` | 1.1B |
+| Hindi | `hindi` | 600M |
+| Spanish | `spanish` | 550M |
+| Arabic | `arabic` | 400M |
+| French | `french` | 300M |
+| Portuguese | `portuguese` | 260M |
+| Russian | `russian` | 250M |
+| Japanese | `japanese` | 125M |
+| German | `german` | 100M |
 
 ## Custom Top/Bottom Bars
 

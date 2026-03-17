@@ -1,3 +1,13 @@
+## 0.0.9
+
+- Add multi-language localization support with `EpubReaderLocalization`
+- Built-in translations for 11 languages: Korean (default), English, Chinese (Simplified), Hindi, Spanish, Arabic, French, Portuguese, Russian, Japanese, German
+- All UI strings (settings panel labels, error messages) are fully localizable
+- Custom translations supported via constructor with Korean defaults for backwards compatibility
+- Fix `fontSansSerif` English value from `'Gothic'` to `'Sans-serif'`
+- Fix non-`EpubLoadException` errors displaying raw `e.toString()` instead of localized unknown error message
+- Localize Noto Sans font button label via `fontNotoSans` field for consistency
+
 ## 0.0.8
 
 - Fix images not rendering in EPUB files — image-only elements (e.g. `<img>` directly in `<body>`) were misclassified as spacing and silently dropped

@@ -14,6 +14,7 @@ export 'src/widgets/settings_panel.dart' show SettingsPanel;
 
 // Models
 export 'src/models/reader_settings.dart' show ReaderSettings, ColorTheme, colorThemes;
+export 'src/models/epub_reader_localization.dart' show EpubReaderLocalization;
 export 'src/models/bookmark.dart' show Bookmark;
 export 'src/models/reading_position.dart' show ReadingPosition;
 export 'src/models/epub_source.dart'
