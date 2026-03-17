@@ -43,6 +43,34 @@ class EpubReaderLocalization {
   /// Noto Sans font display name.
   final String fontNotoSans;
 
+  /// Theme name: warm (따뜻함).
+  final String themeWarm;
+
+  /// Theme name: gray (회색).
+  final String themeGray;
+
+  /// Theme name: black (검정).
+  final String themeBlack;
+
+  /// Theme name: dark (다크).
+  final String themeDark;
+
+  /// Theme name: green (녹색).
+  final String themeGreen;
+
+  /// Theme name: blue-gray (청회색).
+  final String themeBlueGray;
+
+  /// Returns theme names as a list matching [colorThemes] order.
+  List<String> get themeNames => [
+        themeWarm,
+        themeGray,
+        themeBlack,
+        themeDark,
+        themeGreen,
+        themeBlueGray,
+      ];
+
   /// Load failed title shown in error view.
   final String loadFailed;
 
@@ -70,6 +98,12 @@ class EpubReaderLocalization {
     this.fontSerif = '명조',
     this.fontSansSerif = '고딕',
     this.fontNotoSans = 'Sans',
+    this.themeWarm = '따뜻함',
+    this.themeGray = '회색',
+    this.themeBlack = '검정',
+    this.themeDark = '다크',
+    this.themeGreen = '녹색',
+    this.themeBlueGray = '청회색',
     this.loadFailed = '로드 실패',
     this.unknownError = '알 수 없는 오류',
     this.cannotLoadContent = '콘텐츠를 불러올 수 없습니다',
@@ -94,6 +128,12 @@ class EpubReaderLocalization {
     fontSerif: 'Serif',
     fontSansSerif: 'Sans-serif',
     fontNotoSans: 'Sans',
+    themeWarm: 'Warm',
+    themeGray: 'Gray',
+    themeBlack: 'Black',
+    themeDark: 'Dark',
+    themeGreen: 'Green',
+    themeBlueGray: 'Blue Gray',
     loadFailed: 'Load Failed',
     unknownError: 'Unknown error',
     cannotLoadContent: 'Cannot load content',
@@ -115,6 +155,12 @@ class EpubReaderLocalization {
     fontSerif: '宋体',
     fontSansSerif: '黑体',
     fontNotoSans: 'Sans',
+    themeWarm: '暖色',
+    themeGray: '灰色',
+    themeBlack: '黑色',
+    themeDark: '深色',
+    themeGreen: '绿色',
+    themeBlueGray: '蓝灰',
     loadFailed: '加载失败',
     unknownError: '未知错误',
     cannotLoadContent: '无法加载内容',
@@ -136,6 +182,12 @@ class EpubReaderLocalization {
     fontSerif: '明朝',
     fontSansSerif: 'ゴシック',
     fontNotoSans: 'Sans',
+    themeWarm: 'ウォーム',
+    themeGray: 'グレー',
+    themeBlack: 'ブラック',
+    themeDark: 'ダーク',
+    themeGreen: 'グリーン',
+    themeBlueGray: 'ブルーグレー',
     loadFailed: '読み込み失敗',
     unknownError: '不明なエラー',
     cannotLoadContent: 'コンテンツを読み込めません',
@@ -157,6 +209,12 @@ class EpubReaderLocalization {
     fontSerif: 'सेरिफ़',
     fontSansSerif: 'सैन्स-सेरिफ़',
     fontNotoSans: 'Sans',
+    themeWarm: 'गर्म',
+    themeGray: 'धूसर',
+    themeBlack: 'काला',
+    themeDark: 'गहरा',
+    themeGreen: 'हरा',
+    themeBlueGray: 'नीला-धूसर',
     loadFailed: 'लोड विफल',
     unknownError: 'अज्ञात त्रुटि',
     cannotLoadContent: 'सामग्री लोड नहीं हो सकती',
@@ -178,6 +236,12 @@ class EpubReaderLocalization {
     fontSerif: 'Serif',
     fontSansSerif: 'Sans-serif',
     fontNotoSans: 'Sans',
+    themeWarm: 'Cálido',
+    themeGray: 'Gris',
+    themeBlack: 'Negro',
+    themeDark: 'Oscuro',
+    themeGreen: 'Verde',
+    themeBlueGray: 'Gris azulado',
     loadFailed: 'Error de carga',
     unknownError: 'Error desconocido',
     cannotLoadContent: 'No se puede cargar el contenido',
@@ -199,6 +263,12 @@ class EpubReaderLocalization {
     fontSerif: 'مذيّل',
     fontSansSerif: 'بلا ذيل',
     fontNotoSans: 'Sans',
+    themeWarm: 'دافئ',
+    themeGray: 'رمادي',
+    themeBlack: 'أسود',
+    themeDark: 'داكن',
+    themeGreen: 'أخضر',
+    themeBlueGray: 'أزرق رمادي',
     loadFailed: 'فشل التحميل',
     unknownError: 'خطأ غير معروف',
     cannotLoadContent: 'تعذّر تحميل المحتوى',
@@ -220,6 +290,12 @@ class EpubReaderLocalization {
     fontSerif: 'Serif',
     fontSansSerif: 'Sans-serif',
     fontNotoSans: 'Sans',
+    themeWarm: 'Chaud',
+    themeGray: 'Gris',
+    themeBlack: 'Noir',
+    themeDark: 'Sombre',
+    themeGreen: 'Vert',
+    themeBlueGray: 'Bleu-gris',
     loadFailed: 'Échec du chargement',
     unknownError: 'Erreur inconnue',
     cannotLoadContent: 'Impossible de charger le contenu',
@@ -241,6 +317,12 @@ class EpubReaderLocalization {
     fontSerif: 'Serifada',
     fontSansSerif: 'Sem serifa',
     fontNotoSans: 'Sans',
+    themeWarm: 'Quente',
+    themeGray: 'Cinza',
+    themeBlack: 'Preto',
+    themeDark: 'Escuro',
+    themeGreen: 'Verde',
+    themeBlueGray: 'Azul-cinza',
     loadFailed: 'Falha ao carregar',
     unknownError: 'Erro desconhecido',
     cannotLoadContent: 'Não foi possível carregar o conteúdo',
@@ -262,6 +344,12 @@ class EpubReaderLocalization {
     fontSerif: 'С засечками',
     fontSansSerif: 'Без засечек',
     fontNotoSans: 'Sans',
+    themeWarm: 'Тёплый',
+    themeGray: 'Серый',
+    themeBlack: 'Чёрный',
+    themeDark: 'Тёмный',
+    themeGreen: 'Зелёный',
+    themeBlueGray: 'Сине-серый',
     loadFailed: 'Ошибка загрузки',
     unknownError: 'Неизвестная ошибка',
     cannotLoadContent: 'Не удалось загрузить содержимое',
@@ -283,6 +371,12 @@ class EpubReaderLocalization {
     fontSerif: 'Serif',
     fontSansSerif: 'Sans-serif',
     fontNotoSans: 'Sans',
+    themeWarm: 'Warm',
+    themeGray: 'Grau',
+    themeBlack: 'Schwarz',
+    themeDark: 'Dunkel',
+    themeGreen: 'Grün',
+    themeBlueGray: 'Blaugrau',
     loadFailed: 'Laden fehlgeschlagen',
     unknownError: 'Unbekannter Fehler',
     cannotLoadContent: 'Inhalt konnte nicht geladen werden',

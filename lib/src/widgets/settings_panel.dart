@@ -51,11 +51,19 @@ class SettingsPanel extends StatelessWidget {
                   children: [
                     Text(localization.theme, style: TextStyle(color: settings.textColor)),
                     const Spacer(),
-                    ...colorThemes.map((theme) {
+                    ...colorThemes.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final theme = entry.value;
+                      final themeNames = localization.themeNames;
+                      final themeName = index < themeNames.length
+                          ? themeNames[index]
+                          : theme.name;
                       final isSelected =
                           settings.backgroundColor == theme.background &&
                           settings.textColor == theme.text;
-                      return GestureDetector(
+                      return Tooltip(
+                        message: themeName,
+                        child: GestureDetector(
                         onTap: () {
                           settingsNotifier.setColorTheme(theme);
                         },
@@ -83,6 +91,7 @@ class SettingsPanel extends StatelessWidget {
                             ),
                           ),
                         ),
+                      ),
                       );
                     }),
                   ],
