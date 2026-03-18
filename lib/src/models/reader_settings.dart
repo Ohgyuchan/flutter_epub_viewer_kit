@@ -16,12 +16,12 @@ class ColorTheme {
 
 // Available Color Themes
 const colorThemes = [
-  ColorTheme(background: Color(0xFFFFFBF0), text: Colors.black, name: '따뜻함'),
-  ColorTheme(background: Color(0xFFE8E8E8), text: Colors.black87, name: '회색'),
-  ColorTheme(background: Colors.black, text: Colors.white, name: '검정'),
-  ColorTheme(background: Color(0xFF1E1E1E), text: Color(0xFFE0E0E0), name: '다크'),
-  ColorTheme(background: Color(0xFFE8F5E9), text: Color(0xFF1B5E20), name: '녹색'),
-  ColorTheme(background: Color(0xFFECEFF1), text: Color(0xFF263238), name: '청회색'),
+  ColorTheme(background: Color(0xFFFFFBF0), text: Colors.black, name: 'Warm'),
+  ColorTheme(background: Color(0xFFE8E8E8), text: Colors.black87, name: 'Gray'),
+  ColorTheme(background: Colors.black, text: Colors.white, name: 'Black'),
+  ColorTheme(background: Color(0xFF1E1E1E), text: Color(0xFFE0E0E0), name: 'Dark'),
+  ColorTheme(background: Color(0xFFE8F5E9), text: Color(0xFF1B5E20), name: 'Green'),
+  ColorTheme(background: Color(0xFFECEFF1), text: Color(0xFF263238), name: 'Blue Gray'),
 ];
 
 // Reader Settings Model

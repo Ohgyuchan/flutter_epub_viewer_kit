@@ -191,11 +191,10 @@ All localizations cover the following UI elements:
 | Settings labels | `theme`, `font`, `fontSize`, `lineSpacing`, `margin`, `viewMode` |
 | Mode labels | `pageMode`, `scrollMode`, `resetSettings` |
 | Font names | `fontNotoSans`, `fontSerif`, `fontSansSerif` |
-| Theme names | `themeWarm`, `themeGray`, `themeBlack`, `themeDark`, `themeGreen`, `themeBlueGray` |
 | Error messages | `loadFailed`, `unknownError`, `cannotLoadContent`, `checkFileFormat` |
 | Misc | `themeSampleChar` (character shown in theme color swatches) |
 
-You can also access theme names as an ordered list via `localization.themeNames`, which matches the `colorThemes` list order.
+Color theme names (`ColorTheme.name`) use English globally and are not part of localization.
 
 ## Custom Top/Bottom Bars
 
@@ -376,16 +375,16 @@ EpubReaderWidget(
 
 ## Color Themes
 
-Built-in themes available via `colorThemes`. Theme names are localized via `EpubReaderLocalization`:
+Built-in themes available via `colorThemes`:
 
-| Korean | English | Background | Text |
-| --- | --- | --- | --- |
-| 따뜻함 | Warm | #FFFBF0 | Black |
-| 회색 | Gray | #E8E8E8 | Black87 |
-| 검정 | Black | #000000 | White |
-| 다크 | Dark | #1E1E1E | #E0E0E0 |
-| 녹색 | Green | #E8F5E9 | #1B5E20 |
-| 청회색 | Blue Gray | #ECEFF1 | #263238 |
+| Name | Background | Text |
+| --- | --- | --- |
+| Warm | #FFFBF0 | Black |
+| Gray | #E8E8E8 | Black87 |
+| Black | #000000 | White |
+| Dark | #1E1E1E | #E0E0E0 |
+| Green | #E8F5E9 | #1B5E20 |
+| Blue Gray | #ECEFF1 | #263238 |
 
 ## License
 

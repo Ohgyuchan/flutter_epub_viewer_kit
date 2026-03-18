@@ -7,8 +7,7 @@
 - Fix `fontSansSerif` English value from `'Gothic'` to `'Sans-serif'`
 - Fix non-`EpubLoadException` errors displaying raw `e.toString()` instead of localized unknown error message
 - Localize Noto Sans font button label via `fontNotoSans` field for consistency
-- Add localized color theme names (`themeWarm`, `themeGray`, `themeBlack`, `themeDark`, `themeGreen`, `themeBlueGray`) with `themeNames` getter
-- Show localized theme name as tooltip on color theme swatches
+- Change `ColorTheme.name` values from Korean to English
 
 ## 0.0.8
 
