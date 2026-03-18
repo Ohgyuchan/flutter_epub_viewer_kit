@@ -124,4 +124,28 @@ class ReaderSettings {
       isPageMode: json['isPageMode'] as bool? ?? true,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is ReaderSettings &&
+        other.backgroundColor == backgroundColor &&
+        other.textColor == textColor &&
+        other.fontFamily == fontFamily &&
+        other.fontSize == fontSize &&
+        other.lineSpacing == lineSpacing &&
+        other.margin == margin &&
+        other.isPageMode == isPageMode;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        backgroundColor,
+        textColor,
+        fontFamily,
+        fontSize,
+        lineSpacing,
+        margin,
+        isPageMode,
+      );
 }

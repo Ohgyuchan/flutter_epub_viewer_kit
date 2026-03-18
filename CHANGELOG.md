@@ -1,3 +1,26 @@
+## 0.1.0
+
+### Bug Fixes
+- Fix pagination freeze — `_isPaginating` flag now resets on cancelled pagination runs, preventing permanent loading screen
+- Fix paragraph index gaps in EPUBs with multi-row tables, which caused scroll-mode page tracking errors
+- Fix settings panel overflow on small screens — Color Theme, Font Family, View Mode selectors now use `Wrap`/`Column` layout
+- Fix `_buildControlRow` label overflow with long localized strings — label now uses `Flexible` with ellipsis
+- Fix `onSettingsChanged` callback firing on every scroll/page turn — now only fires on actual settings changes
+- Fix content area wasting 56px when bottom bar is hidden — layout now adapts dynamically to bar visibility
+- Fix `Bookmark.copyWith` unable to clear nullable `title`/`excerpt` fields — uses sentinel pattern
+
+### New Features
+- Support swapping EPUB source without recreating the widget (`didUpdateWidget`)
+- Add `==`/`hashCode` to `ReaderSettings`, `EpubSource` subclasses, and `Bookmark.copyWith` sentinel support
+
+### Performance
+- Parallelize settings storage load and EPUB parsing on startup (previously sequential)
+- Eliminate redundant `setSettings` calls on every scroll tick
+
+### Internal
+- Extract `_buildSection` helper in settings panel to reduce layout duplication
+- Unify duplicated table-splitting logic into single loop in `_loadBookContent`
+
 ## 0.0.9
 
 - Add multi-language localization support with `EpubReaderLocalization`

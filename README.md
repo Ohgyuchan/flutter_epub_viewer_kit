@@ -18,6 +18,7 @@ A customizable EPUB reader widget for Flutter. Supports iOS, Android, and Web pl
 - **Automatic settings persistence** - Reader settings are automatically saved to device storage
 - Max readable pages limit (for preview/trial mode)
 - **Multi-language localization** - Built-in support for 11 languages
+- **Dynamic EPUB source swap** - Change the book without recreating the widget
 
 ```bash
 flutter pub add flutter_epub_viewer_kit
@@ -79,6 +80,25 @@ EpubSourceUrl('https://example.com/book.epub')
 
 // From bytes
 EpubSourceBytes(Uint8List bytes)
+```
+
+## Switching Books
+
+You can swap the EPUB source dynamically without recreating the widget:
+
+```dart
+// The widget detects source changes and reloads automatically
+EpubReaderWidget(
+  source: _currentSource,  // Change this to load a different book
+  controller: _controller,
+);
+
+// Example: switch book on button tap
+void _switchBook() {
+  setState(() {
+    _currentSource = const EpubSourceAsset('assets/other_book.epub');
+  });
+}
 ```
 
 ## Controller

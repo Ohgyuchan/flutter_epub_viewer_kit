@@ -17,6 +17,14 @@ class EpubSourceFile extends EpubSource {
   final String filePath;
 
   const EpubSourceFile(this.filePath);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EpubSourceFile && other.filePath == filePath;
+
+  @override
+  int get hashCode => filePath.hashCode;
 }
 
 /// Load EPUB from a remote URL.
@@ -36,6 +44,14 @@ class EpubSourceUrl extends EpubSource {
   final Map<String, String>? headers;
 
   const EpubSourceUrl(this.url, {this.headers});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EpubSourceUrl && other.url == url;
+
+  @override
+  int get hashCode => url.hashCode;
 }
 
 /// Load EPUB from raw bytes.
@@ -63,4 +79,12 @@ class EpubSourceAsset extends EpubSource {
   final String assetPath;
 
   const EpubSourceAsset(this.assetPath);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EpubSourceAsset && other.assetPath == assetPath;
+
+  @override
+  int get hashCode => assetPath.hashCode;
 }

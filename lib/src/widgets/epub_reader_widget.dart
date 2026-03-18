@@ -460,10 +460,16 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
     }
     _bindController();
 
-    // Load saved settings from storage
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _settingsNotifier.loadFromStorage();
-    });
+    // Load saved settings from storage, then load book content
+    _initializeAndLoad();
+  }
+
+  void _initializeAndLoad() {
+    // Run in parallel: settings load notifies via listener when done,
+    // and pagination (triggered by LayoutBuilder) uses whatever settings
+    // are current at that point. If settings load finishes after pagination
+    // starts, the generation counter handles re-pagination.
+    _settingsNotifier.loadFromStorage();
     _loadBookContent();
   }
 
@@ -488,9 +494,33 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
       }
     }
     _previousIsPageMode = currentIsPageMode;
+    // Sync settings to controller
+    widget.controller?.setSettings(_settingsNotifier.settings);
     // Trigger rebuild when settings change
     if (mounted) {
       setState(() {});
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant EpubReaderWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.source != oldWidget.source) {
+      final initialProgress = widget.controller?.initialProgress?.clamp(0.0, 1.0) ?? 0.0;
+      _lastProgress = initialProgress;
+      setState(() {
+        _loadedBook = null;
+        _paragraphs = [];
+        _pages = [];
+        _paginateCacheKey = null;
+        _loadError = null;
+        _isPaginating = false;
+      });
+      _loadBookContent();
+    }
+    if (widget.controller != oldWidget.controller) {
+      _unbindController();
+      _bindController();
     }
   }
 
@@ -578,7 +608,6 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
 
   void _updateControllerState() {
     widget.controller?.setPageInfo(_currentPageIndex, _pages.length);
-    widget.controller?.setSettings(_settingsNotifier.settings);
     widget.controller?.setLoading(_loadedBook == null && _loadError == null);
 
     // Notify position change via controller callback
@@ -646,58 +675,11 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
           final clonedElement = paragraph.element.clone(true);
           final blockElements = _splitIntoBlockElements(clonedElement);
 
-          if (blockElements.length > 1) {
-            for (var j = 0; j < blockElements.length; j++) {
-              final blockElement = blockElements[j];
-
-              final paragraphDataItem = _ParagraphData(
-                index: globalIndex++,
-                chapterIndex: paragraph.chapterIndex,
-                element: blockElement,
-              );
-
-              // 다중 행 테이블을 개별 dialogue로 분할
-              if (paragraphDataItem.type == _ParagraphType.richContent ||
-                  paragraphDataItem.type == _ParagraphType.plainText) {
-                final tableTag = blockElement.localName?.toLowerCase();
-                if (tableTag == 'table') {
-                  final rows = blockElement.getElementsByTagName('tr');
-                  if (rows.length > 1) {
-                    for (final row in rows) {
-                      final tds = row.getElementsByTagName('td');
-                      if (tds.length >= 2) {
-                        paragraphData.add(_ParagraphData.dialogue(
-                          index: globalIndex++,
-                          chapterIndex: paragraph.chapterIndex,
-                          dialogueName: tds[0].text.trim(),
-                          dialogueText: tds[1].text.trim(),
-                        ));
-                      }
-                    }
-                    continue;
-                  }
-                }
-              }
-
-              if (paragraphDataItem.type == _ParagraphType.spacing ||
-                  paragraphDataItem.type == _ParagraphType.richContent ||
-                  paragraphDataItem.plainText.isNotEmpty) {
-                paragraphData.add(paragraphDataItem);
-              }
-            }
-          } else {
-            final paragraphDataItem = _ParagraphData(
-              index: globalIndex++,
-              chapterIndex: paragraph.chapterIndex,
-              element: clonedElement,
-            );
-
-            // 다중 행 테이블을 개별 dialogue로 분할
-            final tableTag = clonedElement.localName?.toLowerCase();
-            if (tableTag == 'table' &&
-                (paragraphDataItem.type == _ParagraphType.richContent ||
-                 paragraphDataItem.type == _ParagraphType.plainText)) {
-              final rows = clonedElement.getElementsByTagName('tr');
+          for (final blockElement in blockElements) {
+            // 다중 행 테이블을 개별 dialogue로 분할 (globalIndex 증가 전에 체크)
+            final tableTag = blockElement.localName?.toLowerCase();
+            if (tableTag == 'table') {
+              final rows = blockElement.getElementsByTagName('tr');
               if (rows.length > 1) {
                 for (final row in rows) {
                   final tds = row.getElementsByTagName('td');
@@ -713,6 +695,12 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
                 continue;
               }
             }
+
+            final paragraphDataItem = _ParagraphData(
+              index: globalIndex++,
+              chapterIndex: paragraph.chapterIndex,
+              element: blockElement,
+            );
 
             if (paragraphDataItem.type == _ParagraphType.spacing ||
                 paragraphDataItem.type == _ParagraphType.richContent ||
@@ -848,7 +836,10 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
     final safeMaxHeight = maxHeight - lineHeight;
 
     for (var index = 0; index < totalParagraphs; index++) {
-      if (generation != _paginationGeneration) return;
+      if (generation != _paginationGeneration) {
+        _isPaginating = false;
+        return;
+      }
 
       final paragraph = paragraphs[index];
 
@@ -976,7 +967,10 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
       pages.add(_PageContent(List<_ParagraphData>.from(currentPage)));
     }
 
-    if (!mounted || generation != _paginationGeneration) return;
+    if (!mounted || generation != _paginationGeneration) {
+      _isPaginating = false;
+      return;
+    }
 
     final totalPages = pages.isEmpty ? 0 : pages.length;
     final targetIndex = totalPages <= 1
@@ -1669,8 +1663,8 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
           ),
           // Reader content
           Positioned(
-            top: kToolbarHeight,
-            bottom: kToolbarHeight,
+            top: _showTopBar ? kToolbarHeight : 0,
+            bottom: (_showBottomBar && widget.bottomBarBuilder != null) ? kToolbarHeight : 0,
             left: 0,
             right: 0,
             child: settings.isPageMode

@@ -47,19 +47,22 @@ class Bookmark {
     };
   }
 
+  static const _sentinel = Object();
+
   /// Creates a copy of this bookmark with the given fields replaced.
+  /// Pass explicit `null` to clear nullable fields (title, excerpt).
   Bookmark copyWith({
     int? pageIndex,
     double? progress,
-    String? title,
-    String? excerpt,
+    Object? title = _sentinel,
+    Object? excerpt = _sentinel,
     DateTime? createdAt,
   }) {
     return Bookmark(
       pageIndex: pageIndex ?? this.pageIndex,
       progress: progress ?? this.progress,
-      title: title ?? this.title,
-      excerpt: excerpt ?? this.excerpt,
+      title: title == _sentinel ? this.title : title as String?,
+      excerpt: excerpt == _sentinel ? this.excerpt : excerpt as String?,
       createdAt: createdAt ?? this.createdAt,
     );
   }
