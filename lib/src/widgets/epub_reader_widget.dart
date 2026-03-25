@@ -315,6 +315,7 @@ class EpubReaderWidget extends StatefulWidget {
     this.maxReadablePages,
     this.settingsStorageKey = 'epub_reader_settings',
     this.localization = const EpubReaderLocalization(),
+    this.progressBarColor,
   });
 
   /// The source of the EPUB file.
@@ -384,6 +385,11 @@ class EpubReaderWidget extends StatefulWidget {
   /// Defaults to Korean. Use [EpubReaderLocalization.english] for English,
   /// or provide custom translations via the constructor.
   final EpubReaderLocalization localization;
+
+  /// Color for the reading progress bar shown at the top when bars are hidden.
+  ///
+  /// If null, defaults to the current text color at 30% opacity.
+  final Color? progressBarColor;
 
   @override
   State<EpubReaderWidget> createState() => _EpubReaderWidgetState();
@@ -1681,7 +1687,8 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
                   minHeight: 2,
                   backgroundColor: settings.backgroundColor,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    settings.textColor.withValues(alpha: 0.3),
+                    widget.progressBarColor ??
+                        settings.textColor.withValues(alpha: 0.3),
                   ),
                 ),
               ),

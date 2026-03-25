@@ -1,3 +1,8 @@
+## 0.1.2
+
+### New Features
+- Add `progressBarColor` parameter to customize the reading progress bar color
+
 ## 0.1.1
 
 ### Bug Fixes
