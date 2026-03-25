@@ -1,3 +1,12 @@
+## 0.1.1
+
+### Bug Fixes
+- Fix page content changing when toggling top/bottom bars — reader now uses stable viewport constraints regardless of bar visibility, preventing unnecessary repagination
+
+### New Features
+- Add reading progress bar at the top of the screen when bars are hidden (2px thin indicator)
+- Top/bottom bars now render as overlays instead of resizing the reader content area (iBooks/Kindle-style UX)
+
 ## 0.1.0
 
 ### Bug Fixes

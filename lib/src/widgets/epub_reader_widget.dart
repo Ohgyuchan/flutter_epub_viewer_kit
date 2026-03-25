@@ -124,10 +124,9 @@ void _stripFontStyles(dom.Element element) {
         .map((d) => d.trim())
         .where((d) => d.isNotEmpty)
         .where((d) {
-          final prop = d.split(':').first.trim().toLowerCase();
-          return prop != 'font-size' && prop != 'font-family';
-        })
-        .join('; ');
+      final prop = d.split(':').first.trim().toLowerCase();
+      return prop != 'font-size' && prop != 'font-family';
+    }).join('; ');
     if (declarations.isEmpty) {
       element.attributes.remove('style');
     } else {
@@ -169,7 +168,7 @@ List<String> _splitIntoSentences(String text) {
         buffer.clear();
         // 뒤따르는 공백/따옴표 스킵
         while (i + 1 < text.length &&
-               (text[i + 1] == ' ' || text[i + 1] == '"' || text[i + 1] == '"')) {
+            (text[i + 1] == ' ' || text[i + 1] == '"' || text[i + 1] == '"')) {
           i++;
         }
       }
@@ -442,7 +441,8 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
     _scrollPositions.itemPositions.addListener(_handleScrollPositions);
 
     // Initialize settings notifier
-    final effectiveSettings = widget.initialSettings ?? widget.controller?.initialSettings;
+    final effectiveSettings =
+        widget.initialSettings ?? widget.controller?.initialSettings;
     final storage = widget.settingsStorageKey != null
         ? SettingsStorage(storageKey: widget.settingsStorageKey)
         : null;
@@ -506,7 +506,8 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
   void didUpdateWidget(covariant EpubReaderWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.source != oldWidget.source) {
-      final initialProgress = widget.controller?.initialProgress?.clamp(0.0, 1.0) ?? 0.0;
+      final initialProgress =
+          widget.controller?.initialProgress?.clamp(0.0, 1.0) ?? 0.0;
       _lastProgress = initialProgress;
       setState(() {
         _loadedBook = null;
@@ -741,9 +742,8 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
       widget.onError?.call(errorMessage);
       widget.controller?.setError(errorMessage);
 
-      final displayError = e is EpubLoadException
-          ? e.message
-          : widget.localization.unknownError;
+      final displayError =
+          e is EpubLoadException ? e.message : widget.localization.unknownError;
 
       if (mounted) {
         setState(() {
@@ -850,17 +850,20 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
           paragraphHeight = paragraphSpacing;
 
         case _ParagraphType.plainText:
-          painter.text = TextSpan(text: paragraph.measurementText, style: style);
+          painter.text =
+              TextSpan(text: paragraph.measurementText, style: style);
           painter.layout(maxWidth: maxWidth);
           paragraphHeight = painter.height;
 
         case _ParagraphType.dialogue:
           final nameColWidth = _parseNameColumnWidth(paragraph, fontSize);
           final dialogueWidth = (maxWidth - nameColWidth).clamp(0.0, maxWidth);
-          painter.text = TextSpan(text: paragraph.dialogueText ?? '', style: style);
+          painter.text =
+              TextSpan(text: paragraph.dialogueText ?? '', style: style);
           painter.layout(maxWidth: dialogueWidth);
           final textH = painter.height;
-          painter.text = TextSpan(text: paragraph.dialogueName ?? '', style: style);
+          painter.text =
+              TextSpan(text: paragraph.dialogueName ?? '', style: style);
           painter.layout(maxWidth: nameColWidth);
           paragraphHeight = max(textH, painter.height);
 
@@ -910,7 +913,8 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
             painter.layout(maxWidth: maxWidth);
             final sentenceHeight = painter.height;
 
-            if (bufferHeight + sentenceHeight > safeMaxHeight && sentenceBuffer.isNotEmpty) {
+            if (bufferHeight + sentenceHeight > safeMaxHeight &&
+                sentenceBuffer.isNotEmpty) {
               // 현재 버퍼를 페이지로
               final text = sentenceBuffer.join(' ');
               pages.add(_PageContent([
@@ -953,8 +957,10 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
         currentHeight = nextHeight;
       }
 
-      final progress = totalParagraphs == 0 ? 1.0 : (index + 1) / totalParagraphs;
-      if (progress - _paginationProgress >= 0.05 || sw.elapsedMilliseconds > 50) {
+      final progress =
+          totalParagraphs == 0 ? 1.0 : (index + 1) / totalParagraphs;
+      if (progress - _paginationProgress >= 0.05 ||
+          sw.elapsedMilliseconds > 50) {
         _paginationProgress = progress.clamp(0.0, 1.0);
         widget.onLoadingProgress?.call(0.5 + progress * 0.5);
         if (mounted) setState(() {});
@@ -1365,10 +1371,12 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
           children: [
             SizedBox(
               width: nameColWidth,
-              child: Text(paragraph.dialogueName ?? '', style: settings.textStyle),
+              child:
+                  Text(paragraph.dialogueName ?? '', style: settings.textStyle),
             ),
             Expanded(
-              child: Text(paragraph.dialogueText ?? '', style: settings.textStyle),
+              child:
+                  Text(paragraph.dialogueText ?? '', style: settings.textStyle),
             ),
           ],
         );
@@ -1480,7 +1488,8 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
     // 파일명만으로 매칭 (경로 구조가 다를 수 있음)
     final fileName = rawSrc.split('/').last;
     for (final entry in images.entries) {
-      if (entry.key.endsWith(fileName) || entry.key.split('/').last == fileName) {
+      if (entry.key.endsWith(fileName) ||
+          entry.key.split('/').last == fileName) {
         if (entry.value.Content != null) return entry.value.Content;
       }
     }
@@ -1646,74 +1655,82 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
   Widget build(BuildContext context) {
     final settings = _settingsNotifier.settings;
 
-    final topBar = _showTopBar
-        ? (widget.topBarBuilder?.call(context, settings) ??
-            _buildTopOverlay(settings))
-        : null;
-
     return Scaffold(
-      extendBodyBehindAppBar: true,
       backgroundColor: settings.backgroundColor,
-      appBar: topBar,
-      body: Stack(
-        children: [
-          // Background fill
-          Positioned.fill(
-            child: ColoredBox(color: settings.backgroundColor),
-          ),
-          // Reader content
-          Positioned(
-            top: _showTopBar ? kToolbarHeight : 0,
-            bottom: (_showBottomBar && widget.bottomBarBuilder != null) ? kToolbarHeight : 0,
-            left: 0,
-            right: 0,
-            child: settings.isPageMode
-                ? _buildPagedReader(settings)
-                : _buildScrollReader(settings),
-          ),
-          // Bottom bar
-          if (_showBottomBar)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: widget.bottomBarBuilder != null
-                  ? widget.bottomBarBuilder!(context, settings)
-                  : _buildBottomOverlay(settings),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Background fill
+            Positioned.fill(
+              child: ColoredBox(color: settings.backgroundColor),
             ),
-        ],
+            // Reader content — always fills the entire area
+            Positioned.fill(
+              child: settings.isPageMode
+                  ? _buildPagedReader(settings)
+                  : _buildScrollReader(settings),
+            ),
+            // Reading progress bar — shown when bars are hidden
+            if (!_showTopBar)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: LinearProgressIndicator(
+                  value: _lastProgress,
+                  minHeight: 2,
+                  backgroundColor: settings.backgroundColor,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    settings.textColor.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+            // Top bar overlay
+            if (_showTopBar)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: widget.topBarBuilder?.call(context, settings) ??
+                    _buildTopOverlay(settings),
+              ),
+            // Bottom bar overlay
+            if (_showBottomBar)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: widget.bottomBarBuilder != null
+                    ? widget.bottomBarBuilder!(context, settings)
+                    : _buildBottomOverlay(settings),
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  PreferredSizeWidget _buildTopOverlay(ReaderSettings settings) {
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: Material(
-        color: settings.backgroundColor.withValues(alpha: 0.95),
-        elevation: 4,
-        child: SafeArea(
-          bottom: false,
-          child: Container(
-            height: kToolbarHeight,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.title ?? _loadedBook?.Title ?? 'EPUB Reader',
-                    style: TextStyle(
-                      color: settings.textColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+  Widget _buildTopOverlay(ReaderSettings settings) {
+    return Material(
+      color: settings.backgroundColor.withValues(alpha: 0.95),
+      child: Container(
+        height: kToolbarHeight,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                widget.title ?? _loadedBook?.Title ?? 'EPUB Reader',
+                style: TextStyle(
+                  color: settings.textColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
                 ),
-              ],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
