@@ -369,7 +369,7 @@ class _ReaderPageState extends State<ReaderPage> {
     switch (widget.config.sourceType) {
       case SourceType.asset:
         setState(() {
-          _source = const EpubSourceAsset('assets/example.epub');
+          _source = const EpubSourceAsset('assets/script-749.epub');
         });
       case SourceType.url:
         setState(() {
