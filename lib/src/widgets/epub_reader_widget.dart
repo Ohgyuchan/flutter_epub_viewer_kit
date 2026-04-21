@@ -34,6 +34,158 @@ typedef OnBookLoaded = void Function(String? title, String? author);
 /// Callback when max readable page limit is reached.
 typedef OnMaxPageReached = void Function(int maxPage, int totalPages);
 
+/// Builds chapters from the EPUB spine.
+///
+/// Many EPUBs (notably Calibre-generated ones) have a `toc.ncx` that only
+/// references a subset of the book — for example, just the title page — while
+/// the actual content lives in additional HTML files declared in the spine.
+/// The spine is the authoritative reading order per the EPUB spec, so this
+/// fallback matches the behavior of mainstream readers when the navigation
+/// document is incomplete or missing.
+List<epubx.EpubChapter> _buildChaptersFromSpine(
+  epubx.EpubBook book, {
+  Set<String> skipHrefs = const {},
+}) {
+  final package = book.Schema?.Package;
+  final spineItems = package?.Spine?.Items;
+  final manifestItems = package?.Manifest?.Items;
+  final htmlMap = book.Content?.Html;
+
+  if (spineItems == null || manifestItems == null || htmlMap == null) {
+    return const [];
+  }
+
+  final idToHref = <String, String>{};
+  for (final item in manifestItems) {
+    final id = item.Id;
+    final href = item.Href;
+    if (id != null && href != null) {
+      idToHref[id] = href;
+    }
+  }
+
+  final result = <epubx.EpubChapter>[];
+  for (final itemRef in spineItems) {
+    final idRef = itemRef.IdRef;
+    if (idRef == null) continue;
+    final href = idToHref[idRef];
+    if (href == null) continue;
+    if (_hrefMatchesAny(href, skipHrefs)) continue;
+
+    final file = _lookupHtmlContentFile(htmlMap, href);
+    final content = file?.Content;
+    if (content == null || content.isEmpty) continue;
+
+    final chapter = epubx.EpubChapter()
+      ..Title = null
+      ..ContentFileName = href
+      ..Anchor = null
+      ..HtmlContent = content
+      ..SubChapters = <epubx.EpubChapter>[];
+
+    result.add(chapter);
+  }
+
+  return result;
+}
+
+/// Looks up an HTML file in [htmlMap] tolerating encoding and path differences
+/// between spine/manifest entries and the stored keys.
+epubx.EpubTextContentFile? _lookupHtmlContentFile(
+  Map<String, epubx.EpubTextContentFile> htmlMap,
+  String href,
+) {
+  final direct = htmlMap[href];
+  if (direct != null) return direct;
+
+  final decoded = Uri.decodeFull(href);
+  final decodedHit = htmlMap[decoded];
+  if (decodedHit != null) return decodedHit;
+
+  final basename = decoded.split('/').last;
+  for (final entry in htmlMap.entries) {
+    final key = entry.key;
+    if (key == decoded || key == basename || key.endsWith('/$basename')) {
+      return entry.value;
+    }
+  }
+  return null;
+}
+
+/// Collects hrefs that should be treated as the book cover and skipped from
+/// the reading flow.
+///
+/// Sources checked (in order of reliability):
+/// - `<guide><reference type="cover" ...>` — the canonical EPUB 2 cover marker.
+/// - Manifest items with `properties="cover-image"` (EPUB 3) or ids matching
+///   `<meta name="cover" content="...">` (EPUB 2) only contribute when they
+///   point at HTML, not the raw image file.
+/// - Common filename heuristics (`titlepage.xhtml`, `cover.xhtml`) when the
+///   above are absent.
+Set<String> _collectCoverHrefs(epubx.EpubBook book) {
+  final result = <String>{};
+  final package = book.Schema?.Package;
+
+  final guideItems = package?.Guide?.Items;
+  if (guideItems != null) {
+    for (final ref in guideItems) {
+      final type = ref.Type?.toLowerCase();
+      final href = ref.Href;
+      if (href == null) continue;
+      if (type == 'cover' || type == 'title-page' || type == 'titlepage') {
+        result.add(href);
+      }
+    }
+  }
+
+  final manifestItems = package?.Manifest?.Items ?? const [];
+  final htmlMap = book.Content?.Html;
+
+  String? coverIdFromMeta;
+  final metaItems = package?.Metadata?.MetaItems;
+  if (metaItems != null) {
+    for (final meta in metaItems) {
+      if (meta.Name?.toLowerCase() == 'cover' && meta.Content != null) {
+        coverIdFromMeta = meta.Content;
+        break;
+      }
+    }
+  }
+
+  for (final item in manifestItems) {
+    final href = item.Href;
+    if (href == null) continue;
+    final isCoverHtml = htmlMap != null && htmlMap.containsKey(href);
+    final propsLower = item.Properties?.toLowerCase() ?? '';
+    final isCoverProperty = propsLower.split(RegExp(r'\s+'))
+        .any((p) => p == 'cover-image' || p == 'cover');
+    if (isCoverProperty && isCoverHtml) {
+      result.add(href);
+    }
+    if (coverIdFromMeta != null &&
+        item.Id == coverIdFromMeta &&
+        isCoverHtml) {
+      result.add(href);
+    }
+  }
+
+  return result;
+}
+
+bool _hrefMatchesAny(String href, Set<String> candidates) {
+  if (candidates.isEmpty) return false;
+  if (candidates.contains(href)) return true;
+  final decoded = Uri.decodeFull(href);
+  if (candidates.contains(decoded)) return true;
+  final basename = decoded.split('/').last;
+  for (final candidate in candidates) {
+    final candidateDecoded = Uri.decodeFull(candidate);
+    if (candidateDecoded == decoded) return true;
+    if (candidateDecoded.split('/').last == basename) return true;
+  }
+  return false;
+}
+
 enum _ParagraphType { plainText, dialogue, richContent, spacing }
 
 class _ParagraphData {
@@ -636,8 +788,42 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
 
       widget.onBookLoaded?.call(book.Title, book.Author);
 
-      final flattenedChapters = epub_parser.parseChapters(book);
-      debugPrint('챕터 개수: ${flattenedChapters.length}');
+      var flattenedChapters = epub_parser.parseChapters(book);
+      debugPrint('챕터 개수 (NCX): ${flattenedChapters.length}');
+
+      final coverHrefs = _collectCoverHrefs(book);
+      if (coverHrefs.isNotEmpty) {
+        debugPrint('감지된 표지 href: $coverHrefs');
+      }
+
+      // Fallback: the NCX may be missing, empty, or only reference a subset
+      // of the book (common with Calibre exports). The spine is the
+      // authoritative reading order, so when it exposes more HTML files than
+      // the NCX references we rebuild chapters from the spine to avoid
+      // dropping content that other readers render without issue.
+      final ncxFiles = flattenedChapters
+          .map((chapter) => chapter.ContentFileName)
+          .whereType<String>()
+          .toSet();
+      final spineChapters =
+          _buildChaptersFromSpine(book, skipHrefs: coverHrefs);
+      final ncxNonCoverCount =
+          ncxFiles.where((h) => !_hrefMatchesAny(h, coverHrefs)).length;
+      if (spineChapters.length > ncxNonCoverCount) {
+        debugPrint(
+          'NCX가 spine을 모두 포함하지 않음 - spine 기반 ${spineChapters.length}개 챕터로 대체',
+        );
+        flattenedChapters = spineChapters;
+      } else if (coverHrefs.isNotEmpty) {
+        // Drop cover-only chapters from the NCX path too so the reader doesn't
+        // open on the title page.
+        flattenedChapters = flattenedChapters
+            .where((chapter) {
+              final file = chapter.ContentFileName;
+              return file == null || !_hrefMatchesAny(file, coverHrefs);
+            })
+            .toList();
+      }
 
       if (flattenedChapters.isEmpty) {
         debugPrint('경고: 파싱된 챕터가 없습니다!');
