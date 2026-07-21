@@ -18,6 +18,7 @@ import '../providers/settings_provider.dart';
 import '../utils/epub_loader.dart';
 import '../utils/settings_storage.dart';
 import '../models/epub_reader_localization.dart';
+import 'reader_bottom_bar.dart';
 import 'settings_panel.dart';
 
 /// Callback when page changes.
@@ -1263,7 +1264,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
         }
 
         if (_loadedBook == null) {
-          return const Center(child: CircularProgressIndicator());
+          return _buildLoadingView(settings);
         }
 
         if (_paragraphs.isEmpty) {
@@ -1275,7 +1276,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
             !maxHeight.isFinite ||
             maxWidth <= 0 ||
             maxHeight <= 0) {
-          return const Center(child: CircularProgressIndicator());
+          return _buildLoadingView(settings);
         }
 
         final needsPagination = _paginateCacheKey != key || _pages.isEmpty;
@@ -1296,16 +1297,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
               }
             });
           }
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 12),
-                Text('${(_paginationProgress * 100).toStringAsFixed(0)}%'),
-              ],
-            ),
-          );
+          return _buildLoadingView(settings, showProgress: true);
         }
 
         if (_pages.isEmpty) {
@@ -1393,6 +1385,28 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
     );
   }
 
+  Widget _buildLoadingView(ReaderSettings settings,
+      {bool showProgress = false}) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            color: settings.accentColor,
+            strokeWidth: 2.5,
+          ),
+          if (showProgress) ...[
+            const SizedBox(height: 12),
+            Text(
+              '${(_paginationProgress * 100).toStringAsFixed(0)}%',
+              style: TextStyle(color: settings.mutedColor, fontSize: 13),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildErrorView(ReaderSettings settings) {
     return Center(
       child: Padding(
@@ -1400,21 +1414,21 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            Icon(Icons.error_outline, size: 44, color: settings.mutedColor),
             const SizedBox(height: 16),
             Text(
               widget.localization.loadFailed,
               style: TextStyle(
                 color: settings.textColor,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _loadError ?? widget.localization.unknownError,
               style: TextStyle(
-                color: settings.textColor.withValues(alpha: 0.7),
+                color: settings.mutedColor,
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
@@ -1430,7 +1444,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+          Icon(Icons.error_outline, size: 44, color: settings.mutedColor),
           const SizedBox(height: 16),
           Text(
             widget.localization.cannotLoadContent,
@@ -1439,10 +1453,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
           const SizedBox(height: 8),
           Text(
             widget.localization.checkFileFormat,
-            style: TextStyle(
-              color: settings.textColor.withValues(alpha: 0.6),
-              fontSize: 12,
-            ),
+            style: TextStyle(color: settings.mutedColor, fontSize: 12),
           ),
         ],
       ),
@@ -1467,7 +1478,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
         }
 
         if (_loadedBook == null) {
-          return const Center(child: CircularProgressIndicator());
+          return _buildLoadingView(settings);
         }
 
         if (_paragraphs.isEmpty) {
@@ -1479,7 +1490,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
             !maxHeight.isFinite ||
             maxWidth <= 0 ||
             maxHeight <= 0) {
-          return const Center(child: CircularProgressIndicator());
+          return _buildLoadingView(settings);
         }
 
         final needsPagination = _paginateCacheKey != key || _pages.isEmpty;
@@ -1500,16 +1511,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
               }
             });
           }
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 12),
-                Text('${(_paginationProgress * 100).toStringAsFixed(0)}%'),
-              ],
-            ),
-          );
+          return _buildLoadingView(settings, showProgress: true);
         }
 
         // Calculate max paragraph index based on maxReadablePages
@@ -1898,7 +1900,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
                   backgroundColor: settings.backgroundColor,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     widget.progressBarColor ??
-                        settings.textColor.withValues(alpha: 0.3),
+                        settings.accentColor.withValues(alpha: 0.4),
                   ),
                 ),
               ),
@@ -1930,10 +1932,13 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
 
   Widget _buildTopOverlay(ReaderSettings settings) {
     return Material(
-      color: settings.backgroundColor.withValues(alpha: 0.95),
+      color: settings.surfaceColor.withValues(alpha: 0.96),
       child: Container(
         height: kToolbarHeight,
         padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: settings.dividerColor)),
+        ),
         child: Row(
           children: [
             Expanded(
@@ -1941,7 +1946,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
                 widget.title ?? _loadedBook?.Title ?? 'EPUB Reader',
                 style: TextStyle(
                   color: settings.textColor,
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
                 maxLines: 1,
@@ -1955,7 +1960,13 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
   }
 
   Widget _buildBottomOverlay(ReaderSettings settings) {
-    return const SizedBox.shrink();
+    if (_pages.isEmpty) return const SizedBox.shrink();
+    return ReaderBottomBar(
+      settings: settings,
+      pageIndex: _currentPageIndex,
+      totalPages: _pages.length,
+      onPageSelected: _goToPage,
+    );
   }
 
   void _animateToScrollPage(int pageIndex, {bool animate = true}) {
