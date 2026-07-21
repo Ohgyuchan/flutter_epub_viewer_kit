@@ -1,3 +1,24 @@
+## 0.3.0
+
+### Breaking Changes
+- Theme presets reduced to three: White, Dark, Black. The `Warm`, `Gray`, `Green`, and `Blue Gray` presets are removed — code that looks up removed preset names in `colorThemes` must be updated
+- Default reader colors changed from `#FFFBF0`/black to the White preset (`#FFFFFF` background, `#212529` text). Saved user settings are unaffected
+- Dark and Black preset text colors toned down for comfortable night reading (`#C8C8C8` / `#B8B8B8` instead of pure white)
+
+### New Features
+- `ColorTheme` gains an optional `accent` color; `ReaderSettings` exposes derived chrome tokens: `accentColor`, `mutedColor`, `dividerColor`, `surfaceColor`
+- Default bottom bar with a page slider and `current / total` indicator — drag to jump to a page; a custom `bottomBarBuilder` still replaces it
+- Reading progress bar (shown when bars are hidden) now defaults to the accent color; `progressBarColor` still overrides
+
+### Improvements
+- Settings panel redesigned: drag handle, accent selection rings on theme swatches, font chips rendered in their own typeface, pill-style steppers, custom segmented view-mode toggle (hardcoded blue selection color removed)
+- Top bar restyled with surface color and hairline divider; loading and error states follow the theme tokens
+- Page slider announces "page / total" to screen readers
+
+### Example
+- Example app aligned with the new tokens; bookmark list redesigned to match the reader's design language
+- Sample EPUBs consolidated to a single `example.epub`
+
 ## 0.2.0
 
 ### Breaking Changes
