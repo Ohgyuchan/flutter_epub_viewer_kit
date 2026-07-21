@@ -66,6 +66,8 @@ class _ReaderBottomBarState extends State<ReaderBottomBar> {
                     widget.onPageSelected(v.round());
                     setState(() => _dragValue = null);
                   },
+                  semanticFormatterCallback: (double v) =>
+                      '${v.round() + 1} / ${widget.totalPages}',
                 ),
               ),
             Text(

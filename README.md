@@ -308,8 +308,8 @@ enabled bars.
 
 ```dart
 const ReaderSettings({
-  Color backgroundColor,    // Default: Color(0xFFFFFBF0)
-  Color textColor,          // Default: Colors.black
+  Color backgroundColor,    // Default: Color(0xFFFAF4E6)
+  Color textColor,          // Default: Color(0xFF433A2F)
   String fontFamily,        // Default: 'Noto Sans'
   int fontSize,             // 1~9, Default: 4
   int lineSpacing,          // 1~5, Default: 2
@@ -443,14 +443,19 @@ controller.updateSettings(
 
 Built-in themes available via `colorThemes`:
 
-| Name | Background | Text |
-| --- | --- | --- |
-| Warm | #FFFBF0 | Black |
-| Gray | #E8E8E8 | Black87 |
-| Black | #000000 | White |
-| Dark | #1E1E1E | #E0E0E0 |
-| Green | #E8F5E9 | #1B5E20 |
-| Blue Gray | #ECEFF1 | #263238 |
+| Name | Background | Text | Accent |
+| --- | --- | --- | --- |
+| White | #FFFFFF | #212529 | #2E7CE0 |
+| Sepia | #FAF4E6 | #433A2F | #B0763B |
+| Gray | #ECEEF0 | #343A40 | #2E7CE0 |
+| Paper Green | #E5EFE7 | #2E4A38 | #3E7A55 |
+| Dark | #222326 | #C8C8C8 | #6AA5E8 |
+| Black | #000000 | #B8B8B8 | #6AA5E8 |
+
+Each `ColorTheme` also carries an optional `accent` (`Color?`) used for chrome
+like selection rings and sliders. When `accent` is `null`, it falls back to a
+brightness-based default. `ReaderSettings` exposes the resolved chrome tokens
+as getters: `accentColor`, `mutedColor`, `dividerColor`, and `surfaceColor`.
 
 ## License
 
