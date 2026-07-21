@@ -54,4 +54,18 @@ void main() {
     expect(find.byType(Slider), findsNothing);
     expect(find.text('1 / 1'), findsOneWidget);
   });
+
+  testWidgets('zero pages renders without crashing', (tester) async {
+    await tester.pumpWidget(wrap(
+      ReaderBottomBar(
+        settings: const ReaderSettings(),
+        pageIndex: 0,
+        totalPages: 0,
+        onPageSelected: (_) {},
+      ),
+    ));
+
+    expect(find.byType(Slider), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

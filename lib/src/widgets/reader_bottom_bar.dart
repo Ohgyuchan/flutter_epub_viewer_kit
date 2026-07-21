@@ -30,10 +30,11 @@ class _ReaderBottomBarState extends State<ReaderBottomBar> {
   @override
   Widget build(BuildContext context) {
     final settings = widget.settings;
-    final maxPage = (widget.totalPages - 1).toDouble();
+    final maxPage =
+        widget.totalPages > 1 ? (widget.totalPages - 1).toDouble() : 0.0;
     final value =
         (_dragValue ?? widget.pageIndex.toDouble()).clamp(0.0, maxPage);
-    final displayPage = value.round() + 1;
+    final displayPage = widget.totalPages == 0 ? 0 : value.round() + 1;
 
     return Material(
       color: settings.surfaceColor.withValues(alpha: 0.96),
