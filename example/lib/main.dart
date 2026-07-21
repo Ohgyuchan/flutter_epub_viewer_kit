@@ -61,8 +61,6 @@ class ReaderConfig {
 /// Asset books bundled with the example, used for the source picker and the
 /// in-reader dynamic source swap demo.
 const assetBooks = [
-  'assets/script-749.epub',
-  'assets/639.epub',
   'assets/example.epub',
 ];
 
