@@ -735,48 +735,175 @@ class _ReaderPageState extends State<ReaderPage> {
 
   void _showBookmarksList() {
     final bookmarks = _controller.bookmarks;
+    final settings = _controller.currentSettings;
 
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        if (bookmarks.isEmpty) {
-          return const SizedBox(
-            height: 200,
-            child: Center(child: Text('No bookmarks yet')),
-          );
-        }
-
-        return ListView.builder(
-          shrinkWrap: true,
-          itemCount: bookmarks.length,
-          itemBuilder: (context, index) {
-            final bookmark = bookmarks[index];
-            return ListTile(
-              leading: const Icon(Icons.bookmark),
-              title: Text(bookmark.title ?? 'Page ${bookmark.pageIndex + 1}'),
-              subtitle: bookmark.excerpt != null
-                  ? Text(
-                      bookmark.excerpt!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    )
-                  : null,
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () {
-                  _controller.removeBookmark(bookmark);
-                  Navigator.pop(context);
-                  _showBookmarksList();
-                },
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.6,
+          ),
+          decoration: BoxDecoration(
+            color: settings.surfaceColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(top: 8, bottom: 14),
+                decoration: BoxDecoration(
+                  color: settings.textColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-              onTap: () {
-                _controller.goToBookmark(bookmark);
-                Navigator.pop(context);
-              },
-            );
-          },
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: Row(
+                  children: [
+                    Text(
+                      'BOOKMARKS',
+                      style: TextStyle(
+                        color: settings.mutedColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${bookmarks.length}',
+                      style: TextStyle(
+                        color: settings.accentColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (bookmarks.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 56),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.bookmark_border,
+                        size: 32,
+                        color: settings.mutedColor,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'No bookmarks yet',
+                        style: TextStyle(
+                          color: settings.mutedColor,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                    itemCount: bookmarks.length,
+                    separatorBuilder: (_, __) =>
+                        Divider(height: 1, color: settings.dividerColor),
+                    itemBuilder: (context, index) =>
+                        _buildBookmarkRow(bookmarks[index], settings),
+                  ),
+                ),
+            ],
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildBookmarkRow(Bookmark bookmark, ReaderSettings settings) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        _controller.goToBookmark(bookmark);
+        Navigator.pop(context);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: settings.accentColor.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'p.${bookmark.pageIndex + 1}',
+                style: TextStyle(
+                  color: settings.accentColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    bookmark.title ?? 'Page ${bookmark.pageIndex + 1}',
+                    style: TextStyle(
+                      color: settings.textColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (bookmark.excerpt != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      bookmark.excerpt!,
+                      style: TextStyle(
+                        color: settings.mutedColor,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                _controller.removeBookmark(bookmark);
+                Navigator.pop(context);
+                _showBookmarksList();
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 16,
+                  color: settings.mutedColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
