@@ -5,28 +5,52 @@ import 'package:google_fonts/google_fonts.dart';
 class ColorTheme {
   final Color background;
   final Color text;
+
+  /// Accent color for chrome (selection rings, sliders, spinners).
+  /// When null, a brightness-based fallback is derived.
+  final Color? accent;
   final String name;
 
   const ColorTheme({
     required this.background,
     required this.text,
+    this.accent,
     required this.name,
   });
 }
 
 // Available Color Themes
 const colorThemes = [
-  ColorTheme(background: Color(0xFFFFFBF0), text: Colors.black, name: 'Warm'),
-  ColorTheme(background: Color(0xFFE8E8E8), text: Colors.black87, name: 'Gray'),
-  ColorTheme(background: Colors.black, text: Colors.white, name: 'Black'),
   ColorTheme(
-      background: Color(0xFF1E1E1E), text: Color(0xFFE0E0E0), name: 'Dark'),
+      background: Color(0xFFFFFFFF),
+      text: Color(0xFF212529),
+      accent: Color(0xFF2E7CE0),
+      name: 'White'),
   ColorTheme(
-      background: Color(0xFFE8F5E9), text: Color(0xFF1B5E20), name: 'Green'),
+      background: Color(0xFFFAF4E6),
+      text: Color(0xFF433A2F),
+      accent: Color(0xFFB0763B),
+      name: 'Sepia'),
   ColorTheme(
-      background: Color(0xFFECEFF1),
-      text: Color(0xFF263238),
-      name: 'Blue Gray'),
+      background: Color(0xFFECEEF0),
+      text: Color(0xFF343A40),
+      accent: Color(0xFF2E7CE0),
+      name: 'Gray'),
+  ColorTheme(
+      background: Color(0xFFE5EFE7),
+      text: Color(0xFF2E4A38),
+      accent: Color(0xFF3E7A55),
+      name: 'Paper Green'),
+  ColorTheme(
+      background: Color(0xFF222326),
+      text: Color(0xFFC8C8C8),
+      accent: Color(0xFF6AA5E8),
+      name: 'Dark'),
+  ColorTheme(
+      background: Color(0xFF000000),
+      text: Color(0xFFB8B8B8),
+      accent: Color(0xFF6AA5E8),
+      name: 'Black'),
 ];
 
 // Reader Settings Model
@@ -40,8 +64,8 @@ class ReaderSettings {
   final bool isPageMode; // true = 페이지, false = 스크롤
 
   const ReaderSettings({
-    this.backgroundColor = const Color(0xFFFFFBF0),
-    this.textColor = Colors.black,
+    this.backgroundColor = const Color(0xFFFAF4E6),
+    this.textColor = const Color(0xFF433A2F),
     this.fontFamily = 'Noto Sans',
     this.fontSize = 4,
     this.lineSpacing = 2,
@@ -62,6 +86,37 @@ class ReaderSettings {
   EdgeInsets get actualMargin {
     final marginValue = 8.0 + ((margin - 1) * 8);
     return EdgeInsets.all(marginValue);
+  }
+
+  static const Color _lightAccentFallback = Color(0xFF2E7CE0);
+  static const Color _darkAccentFallback = Color(0xFF6AA5E8);
+
+  bool get _isDarkBackground =>
+      ThemeData.estimateBrightnessForColor(backgroundColor) == Brightness.dark;
+
+  /// Accent for chrome. Matches a preset by background+text, otherwise
+  /// falls back by background brightness.
+  Color get accentColor {
+    for (final theme in colorThemes) {
+      if (theme.background == backgroundColor && theme.text == textColor) {
+        final accent = theme.accent;
+        if (accent != null) return accent;
+      }
+    }
+    return _isDarkBackground ? _darkAccentFallback : _lightAccentFallback;
+  }
+
+  /// Secondary text/icon color.
+  Color get mutedColor => textColor.withValues(alpha: 0.55);
+
+  /// Hairline borders and inactive tracks.
+  Color get dividerColor => textColor.withValues(alpha: 0.08);
+
+  /// Chrome surface (panels, bars) - background shifted slightly.
+  Color get surfaceColor {
+    final hsl = HSLColor.fromColor(backgroundColor);
+    final shift = _isDarkBackground ? 0.04 : -0.03;
+    return hsl.withLightness((hsl.lightness + shift).clamp(0.0, 1.0)).toColor();
   }
 
   // Google Fonts를 사용한 TextStyle
@@ -122,8 +177,8 @@ class ReaderSettings {
   /// Create from JSON
   factory ReaderSettings.fromJson(Map<String, dynamic> json) {
     return ReaderSettings(
-      backgroundColor: Color(json['backgroundColor'] as int? ?? 0xFFFFFBF0),
-      textColor: Color(json['textColor'] as int? ?? 0xFF000000),
+      backgroundColor: Color(json['backgroundColor'] as int? ?? 0xFFFAF4E6),
+      textColor: Color(json['textColor'] as int? ?? 0xFF433A2F),
       fontFamily: json['fontFamily'] as String? ?? 'Noto Sans',
       fontSize: json['fontSize'] as int? ?? 4,
       lineSpacing: json['lineSpacing'] as int? ?? 2,

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_epub_viewer_kit/flutter_epub_viewer_kit.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -64,6 +65,66 @@ void main() {
       expect(controller.progress, 0.0);
       expect(controller.isLoading, true);
       controller.dispose();
+    });
+  });
+
+  group('Color tokens', () {
+    test('preset accent is returned when settings match a preset', () {
+      final white = colorThemes.firstWhere((t) => t.name == 'White');
+      final settings = ReaderSettings(
+        backgroundColor: white.background,
+        textColor: white.text,
+      );
+      expect(settings.accentColor, const Color(0xFF2E7CE0));
+
+      final sepia = colorThemes.firstWhere((t) => t.name == 'Sepia');
+      final sepiaSettings = ReaderSettings(
+        backgroundColor: sepia.background,
+        textColor: sepia.text,
+      );
+      expect(sepiaSettings.accentColor, const Color(0xFFB0763B));
+    });
+
+    test('accent falls back by background brightness for custom colors', () {
+      const lightCustom = ReaderSettings(
+        backgroundColor: Color(0xFFF0F0F0),
+        textColor: Color(0xFF111111),
+      );
+      const darkCustom = ReaderSettings(
+        backgroundColor: Color(0xFF101010),
+        textColor: Color(0xFFEEEEEE),
+      );
+      expect(lightCustom.accentColor, const Color(0xFF2E7CE0));
+      expect(darkCustom.accentColor, const Color(0xFF6AA5E8));
+    });
+
+    test('surfaceColor shifts darker on light bg, lighter on dark bg', () {
+      const light = ReaderSettings(); // default = Sepia
+      expect(
+        HSLColor.fromColor(light.surfaceColor).lightness,
+        lessThan(HSLColor.fromColor(light.backgroundColor).lightness),
+      );
+
+      const dark = ReaderSettings(
+        backgroundColor: Color(0xFF222326),
+        textColor: Color(0xFFC8C8C8),
+      );
+      expect(
+        HSLColor.fromColor(dark.surfaceColor).lightness,
+        greaterThan(HSLColor.fromColor(dark.backgroundColor).lightness),
+      );
+    });
+
+    test('muted and divider tokens derive from textColor alpha', () {
+      const settings = ReaderSettings();
+      expect(settings.mutedColor.a, closeTo(0.55, 0.01));
+      expect(settings.dividerColor.a, closeTo(0.08, 0.01));
+    });
+
+    test('default settings use retuned Sepia preset', () {
+      const settings = ReaderSettings();
+      expect(settings.backgroundColor, const Color(0xFFFAF4E6));
+      expect(settings.textColor, const Color(0xFF433A2F));
     });
   });
 }
