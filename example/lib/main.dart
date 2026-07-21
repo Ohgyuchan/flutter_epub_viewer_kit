@@ -30,6 +30,9 @@ enum SourceType { asset, url, bytes }
 
 class ReaderConfig {
   final SourceType sourceType;
+  final String assetPath;
+  final EpubReaderLocalization localization;
+  final Color? progressBarColor;
   final bool showWatermark;
   final bool useCustomBars;
   final bool enablePersistence;
@@ -41,6 +44,9 @@ class ReaderConfig {
 
   const ReaderConfig({
     required this.sourceType,
+    required this.assetPath,
+    required this.localization,
+    required this.progressBarColor,
     required this.showWatermark,
     required this.useCustomBars,
     required this.enablePersistence,
@@ -51,6 +57,26 @@ class ReaderConfig {
     required this.loadInitialBookmarks,
   });
 }
+
+/// Asset books bundled with the example, used for the source picker and the
+/// in-reader dynamic source swap demo.
+const assetBooks = [
+  'assets/script-749.epub',
+  'assets/639.epub',
+  'assets/example.epub',
+];
+
+const localizationPresets = <String, EpubReaderLocalization>{
+  '한국어': EpubReaderLocalization.korean,
+  'English': EpubReaderLocalization.english,
+  '日本語': EpubReaderLocalization.japanese,
+};
+
+const progressBarColorPresets = <String, Color?>{
+  'Default': null,
+  'Indigo': Colors.indigo,
+  'Orange': Colors.orange,
+};
 
 // ============================================================
 // Screen 1: Feature Configuration Home
@@ -65,6 +91,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   SourceType _sourceType = SourceType.asset;
+  String _assetPath = assetBooks.first;
+  String _localizationName = '한국어';
+  String _progressBarColorName = 'Default';
   bool _showWatermark = false;
   bool _useCustomBars = true;
   bool _enablePersistence = true;
@@ -87,6 +116,9 @@ class _HomePageState extends State<HomePage> {
 
     final config = ReaderConfig(
       sourceType: _sourceType,
+      assetPath: _assetPath,
+      localization: localizationPresets[_localizationName]!,
+      progressBarColor: progressBarColorPresets[_progressBarColorName],
       showWatermark: _showWatermark,
       useCustomBars: _useCustomBars,
       enablePersistence: _enablePersistence,
@@ -117,27 +149,119 @@ class _HomePageState extends State<HomePage> {
           // --- Source ---
           _SectionCard(
             title: 'Source',
-            child: SegmentedButton<SourceType>(
-              segments: const [
-                ButtonSegment(value: SourceType.asset, label: Text('Asset')),
-                ButtonSegment(value: SourceType.url, label: Text('URL')),
-                ButtonSegment(value: SourceType.bytes, label: Text('Bytes')),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SegmentedButton<SourceType>(
+                  segments: const [
+                    ButtonSegment(
+                      value: SourceType.asset,
+                      label: Text('Asset'),
+                    ),
+                    ButtonSegment(value: SourceType.url, label: Text('URL')),
+                    ButtonSegment(
+                      value: SourceType.bytes,
+                      label: Text('Bytes'),
+                    ),
+                  ],
+                  selected: {_sourceType},
+                  onSelectionChanged: (v) =>
+                      setState(() => _sourceType = v.first),
+                ),
+                if (_sourceType == SourceType.asset)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Wrap(
+                      spacing: 8,
+                      children: assetBooks
+                          .map(
+                            (path) => ChoiceChip(
+                              label: Text(path.split('/').last),
+                              selected: _assetPath == path,
+                              onSelected: (_) =>
+                                  setState(() => _assetPath = path),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
               ],
-              selected: {_sourceType},
-              onSelectionChanged: (v) => setState(() => _sourceType = v.first),
+            ),
+          ),
+
+          // --- Localization ---
+          _SectionCard(
+            title: 'Localization',
+            child: Wrap(
+              spacing: 8,
+              children: localizationPresets.keys
+                  .map(
+                    (name) => ChoiceChip(
+                      label: Text(name),
+                      selected: _localizationName == name,
+                      onSelected: (_) =>
+                          setState(() => _localizationName = name),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+
+          // --- Progress Bar Color ---
+          _SectionCard(
+            title: 'Progress Bar Color',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Shown at the top when bars are hidden (tap center to hide)',
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: progressBarColorPresets.keys
+                      .map(
+                        (name) => ChoiceChip(
+                          label: Text(name),
+                          selected: _progressBarColorName == name,
+                          avatar: progressBarColorPresets[name] != null
+                              ? CircleAvatar(
+                                  backgroundColor:
+                                      progressBarColorPresets[name],
+                                )
+                              : null,
+                          onSelected: (_) =>
+                              setState(() => _progressBarColorName = name),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
             ),
           ),
 
           // --- Reading Mode ---
           _SectionCard(
             title: 'Reading Mode',
-            child: SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(value: true, label: Text('Page')),
-                ButtonSegment(value: false, label: Text('Scroll')),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(value: true, label: Text('Page')),
+                    ButtonSegment(value: false, label: Text('Scroll')),
+                  ],
+                  selected: {_isPageMode},
+                  onSelectionChanged: (v) =>
+                      setState(() => _isPageMode = v.first),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Saved settings override this when persistence is on',
+                  style: theme.textTheme.bodySmall,
+                ),
               ],
-              selected: {_isPageMode},
-              onSelectionChanged: (v) => setState(() => _isPageMode = v.first),
             ),
           ),
 
@@ -369,7 +493,7 @@ class _ReaderPageState extends State<ReaderPage> {
     switch (widget.config.sourceType) {
       case SourceType.asset:
         setState(() {
-          _source = const EpubSourceAsset('assets/script-749.epub');
+          _source = EpubSourceAsset(widget.config.assetPath);
         });
       case SourceType.url:
         setState(() {
@@ -402,6 +526,16 @@ class _ReaderPageState extends State<ReaderPage> {
     if (mounted) setState(() {});
   }
 
+  /// Swaps to the next bundled asset book without recreating the widget,
+  /// demonstrating dynamic source swap via didUpdateWidget.
+  void _swapBook() {
+    final current = _source;
+    if (current is! EpubSourceAsset) return;
+    final index = assetBooks.indexOf(current.assetPath);
+    final next = assetBooks[(index + 1) % assetBooks.length];
+    setState(() => _source = EpubSourceAsset(next));
+  }
+
   @override
   void dispose() {
     _controller.removeListener(_onControllerChanged);
@@ -417,101 +551,110 @@ class _ReaderPageState extends State<ReaderPage> {
 
     final config = widget.config;
 
-    return EpubReaderWidget(
-      source: _source!,
-      controller: _controller,
-      settingsStorageKey: config.enablePersistence
-          ? 'epub_reader_settings'
-          : null,
-      initialSettings: ReaderSettings(isPageMode: config.isPageMode),
-      showTopBar: true,
-      showBottomBar: true,
-      topBarBuilder: config.useCustomBars
-          ? (context, settings) => _buildTopBar(settings)
-          : null,
-      bottomBarBuilder: config.useCustomBars
-          ? (context, settings) => _buildBottomBar(settings)
-          : null,
-      watermark: config.showWatermark ? _buildWatermark() : null,
-      maxReadablePages: config.enableMaxPages ? config.maxPages : null,
-      onMaxPageReached: (maxPage, totalPages) {
-        _showMaxPageDialog(maxPage, totalPages);
-      },
-      onPageChanged: (current, total) {
-        debugPrint('Page: $current / $total');
-      },
-      onBookLoaded: (title, author) {
-        debugPrint('Book loaded: $title by $author');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Loaded: ${title ?? "Unknown"} by ${author ?? "Unknown"}',
+    // The reader is an embeddable widget — the app owns the Scaffold.
+    return Scaffold(
+      body: EpubReaderWidget(
+        source: _source!,
+        controller: _controller,
+        settingsStorageKey: config.enablePersistence
+            ? 'epub_reader_settings'
+            : null,
+        initialSettings: ReaderSettings(isPageMode: config.isPageMode),
+        localization: config.localization,
+        progressBarColor: config.progressBarColor,
+        showTopBar: true,
+        showBottomBar: true,
+        topBarBuilder: config.useCustomBars
+            ? (context, settings, position) => _buildTopBar(settings)
+            : null,
+        bottomBarBuilder: config.useCustomBars
+            ? (context, settings, position) =>
+                  _buildBottomBar(settings, position)
+            : null,
+        watermark: config.showWatermark ? _buildWatermark() : null,
+        maxReadablePages: config.enableMaxPages ? config.maxPages : null,
+        onMaxPageReached: (maxPage, totalPages) {
+          _showMaxPageDialog(maxPage, totalPages);
+        },
+        onPageChanged: (current, total) {
+          debugPrint('Page: $current / $total');
+        },
+        onBookLoaded: (title, author) {
+          debugPrint('Book loaded: $title by $author');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Loaded: ${title ?? "Unknown"} by ${author ?? "Unknown"}',
+                ),
+                duration: const Duration(seconds: 2),
               ),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      },
-      onError: (error) {
-        debugPrint('Error: $error');
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error: $error')));
-        }
-      },
+            );
+          }
+        },
+        onError: (error) {
+          debugPrint('Error: $error');
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Error: $error')));
+          }
+        },
+      ),
     );
   }
 
   // --- Custom top bar ---
 
-  PreferredSizeWidget _buildTopBar(ReaderSettings settings) {
+  Widget _buildTopBar(ReaderSettings settings) {
     final isBookmarked = _controller.isCurrentPageBookmarked;
 
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: Material(
-        color: settings.backgroundColor.withValues(alpha: 0.95),
-        elevation: 4,
-        child: SafeArea(
-          bottom: false,
-          child: Container(
-            height: kToolbarHeight,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.arrow_back, color: settings.textColor),
-                  onPressed: () => Navigator.maybePop(context),
-                ),
-                Expanded(
-                  child: Text(
-                    'EPUB Reader',
-                    style: TextStyle(
-                      color: settings.textColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
+    return Material(
+      color: settings.backgroundColor.withValues(alpha: 0.95),
+      elevation: 4,
+      child: SafeArea(
+        bottom: false,
+        child: Container(
+          height: kToolbarHeight,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.arrow_back, color: settings.textColor),
+                onPressed: () => Navigator.maybePop(context),
+              ),
+              Expanded(
+                child: Text(
+                  'EPUB Reader',
+                  style: TextStyle(
+                    color: settings.textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
+              ),
+              if (widget.config.sourceType == SourceType.asset)
                 IconButton(
-                  icon: Icon(
-                    isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                    color: isBookmarked ? Colors.amber : settings.textColor,
-                  ),
-                  onPressed: () => _controller.toggleBookmark(),
+                  tooltip: 'Swap book',
+                  icon: Icon(Icons.swap_horiz, color: settings.textColor),
+                  onPressed: _swapBook,
                 ),
-                IconButton(
-                  icon: Icon(Icons.list, color: settings.textColor),
-                  onPressed: _showBookmarksList,
+              IconButton(
+                icon: Icon(
+                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                  color: isBookmarked ? Colors.amber : settings.textColor,
                 ),
-                IconButton(
-                  icon: Icon(Icons.settings, color: settings.textColor),
-                  onPressed: () => _controller.showSettings(),
-                ),
-              ],
-            ),
+                onPressed: () => _controller.toggleBookmark(),
+              ),
+              IconButton(
+                icon: Icon(Icons.list, color: settings.textColor),
+                onPressed: _showBookmarksList,
+              ),
+              IconButton(
+                icon: Icon(Icons.settings, color: settings.textColor),
+                onPressed: () => _controller.showSettings(),
+              ),
+            ],
           ),
         ),
       ),
@@ -520,10 +663,10 @@ class _ReaderPageState extends State<ReaderPage> {
 
   // --- Custom bottom bar ---
 
-  Widget _buildBottomBar(ReaderSettings settings) {
-    final currentPage = _controller.currentPage + 1;
-    final totalPages = _controller.totalPages;
-    final progress = _controller.progress;
+  Widget _buildBottomBar(ReaderSettings settings, ReadingPosition position) {
+    final currentPage = position.pageIndex + 1;
+    final totalPages = position.totalPages;
+    final progress = position.progress;
 
     return Material(
       color: settings.backgroundColor.withValues(alpha: 0.95),

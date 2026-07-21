@@ -1,3 +1,22 @@
+## 0.2.0
+
+### Breaking Changes
+- `EpubReaderWidget` no longer wraps itself in a `Scaffold` — it is now an embeddable widget. Wrap it in your own `Scaffold` (or any layout); `SafeArea` is still applied internally
+- `topBarBuilder`/`bottomBarBuilder` now receive a third `ReadingPosition` parameter and both return `Widget` — the `PreferredSizeWidget` requirement on the top bar is dropped (its `preferredSize` was never used)
+- `showTopBar`/`showBottomBar: false` now disables that bar entirely — the center tap toggle no longer resurrects explicitly disabled bars, and prop changes apply on rebuild
+- `SettingsPanel` removed from public exports — it was unusable (its constructor requires `SettingsNotifier`, which was never exported)
+
+### Bug Fixes
+- Fix custom `fontFamily` being silently ignored — unknown font names are now applied as-is, enabling app-bundled fonts
+- Add missing `==`/`hashCode` to `EpubSourceBytes` — passing a new instance with identical bytes on rebuild no longer reloads the entire book
+- Fix race condition when swapping the EPUB source while a previous load is in flight — a stale load can no longer overwrite the newly requested book
+- Fix unnecessary full repagination when toggling page/scroll view mode — layout metrics are unchanged, so the pagination cache is kept
+
+### Documentation & Example
+- Document `progressBarColor`, `title`, `onLoadingProgress`, tap zones, bar builder contract, and the persistence-over-`initialSettings` precedence in README
+- Example app now demonstrates localization presets, `progressBarColor`, asset book selection, in-reader dynamic source swap, and the new bar builder signature
+- Replace the example's stale counter template test with a real smoke test
+
 ## 0.1.3
 
 ### Bug Fixes

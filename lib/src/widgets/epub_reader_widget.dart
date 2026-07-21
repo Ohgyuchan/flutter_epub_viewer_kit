@@ -13,6 +13,7 @@ import '../epub_reader_controller.dart';
 import '../models/bookmark.dart';
 import '../models/epub_source.dart';
 import '../models/reader_settings.dart';
+import '../models/reading_position.dart';
 import '../providers/settings_provider.dart';
 import '../utils/epub_loader.dart';
 import '../utils/settings_storage.dart';
@@ -33,6 +34,16 @@ typedef OnBookLoaded = void Function(String? title, String? author);
 
 /// Callback when max readable page limit is reached.
 typedef OnMaxPageReached = void Function(int maxPage, int totalPages);
+
+/// Builds a custom top or bottom bar.
+///
+/// Re-invoked whenever the page, progress, or settings change, so the bar
+/// can render current state directly from [position].
+typedef EpubBarBuilder = Widget Function(
+  BuildContext context,
+  ReaderSettings settings,
+  ReadingPosition position,
+);
 
 /// Builds chapters from the EPUB spine.
 ///
@@ -157,14 +168,13 @@ Set<String> _collectCoverHrefs(epubx.EpubBook book) {
     if (href == null) continue;
     final isCoverHtml = htmlMap != null && htmlMap.containsKey(href);
     final propsLower = item.Properties?.toLowerCase() ?? '';
-    final isCoverProperty = propsLower.split(RegExp(r'\s+'))
+    final isCoverProperty = propsLower
+        .split(RegExp(r'\s+'))
         .any((p) => p == 'cover-image' || p == 'cover');
     if (isCoverProperty && isCoverHtml) {
       result.add(href);
     }
-    if (coverIdFromMeta != null &&
-        item.Id == coverIdFromMeta &&
-        isCoverHtml) {
+    if (coverIdFromMeta != null && item.Id == coverIdFromMeta && isCoverHtml) {
       result.add(href);
     }
   }
@@ -495,19 +505,23 @@ class EpubReaderWidget extends StatefulWidget {
   /// Called when max readable page limit is reached.
   final OnMaxPageReached? onMaxPageReached;
 
-  /// Whether to show the default top bar.
+  /// Whether the top bar is enabled.
+  ///
+  /// When false the top bar is never shown, even when the user taps the
+  /// center of the screen to toggle bar visibility.
   final bool showTopBar;
 
-  /// Whether to show the default bottom bar.
+  /// Whether the bottom bar is enabled.
+  ///
+  /// When false the bottom bar is never shown, even when the user taps the
+  /// center of the screen to toggle bar visibility.
   final bool showBottomBar;
 
   /// Custom top bar builder. If provided, replaces the default top bar.
-  final PreferredSizeWidget Function(
-      BuildContext context, ReaderSettings settings)? topBarBuilder;
+  final EpubBarBuilder? topBarBuilder;
 
   /// Custom bottom bar builder. If provided, replaces the default bottom bar.
-  final Widget Function(BuildContext context, ReaderSettings settings)?
-      bottomBarBuilder;
+  final EpubBarBuilder? bottomBarBuilder;
 
   /// Title displayed in the top bar.
   final String? title;
@@ -555,8 +569,9 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
   late final SettingsNotifier _settingsNotifier;
   bool? _previousIsPageMode;
 
-  bool _showTopBar = true;
-  bool _showBottomBar = true;
+  /// Whether bars are currently toggled visible. Effective visibility is
+  /// derived per-bar: `widget.showTopBar && _barsVisible`.
+  bool _barsVisible = true;
 
   List<_ParagraphData> _paragraphs = [];
   List<_PageContent> _pages = [];
@@ -572,6 +587,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
   bool _isPaginating = false;
   double _paginationProgress = 0.0;
   int _paginationGeneration = 0;
+  int _loadGeneration = 0;
 
   int? _pendingScrollParagraphIndex;
 
@@ -594,8 +610,6 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
   @override
   void initState() {
     super.initState();
-    _showTopBar = widget.showTopBar;
-    _showBottomBar = widget.showBottomBar;
     _scrollPositions.itemPositions.addListener(_handleScrollPositions);
 
     // Initialize settings notifier
@@ -776,14 +790,19 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
   }
 
   Future<void> _loadBookContent() async {
+    // Guards against a stale load finishing after the source was swapped:
+    // only the latest generation may apply its results.
+    final generation = ++_loadGeneration;
     try {
       widget.controller?.setLoading(true);
       debugPrint('EPUB 파일 로딩 시작...');
 
       final bytes = await EpubLoader.load(widget.source);
+      if (generation != _loadGeneration || !mounted) return;
       debugPrint('EPUB 파일 크기: ${bytes.length} bytes');
 
       final book = await epubx.EpubReader.readBook(bytes);
+      if (generation != _loadGeneration || !mounted) return;
       debugPrint('EPUB 파싱 완료. 책 제목: ${book.Title}');
 
       widget.onBookLoaded?.call(book.Title, book.Author);
@@ -817,12 +836,10 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
       } else if (coverHrefs.isNotEmpty) {
         // Drop cover-only chapters from the NCX path too so the reader doesn't
         // open on the title page.
-        flattenedChapters = flattenedChapters
-            .where((chapter) {
-              final file = chapter.ContentFileName;
-              return file == null || !_hrefMatchesAny(file, coverHrefs);
-            })
-            .toList();
+        flattenedChapters = flattenedChapters.where((chapter) {
+          final file = chapter.ContentFileName;
+          return file == null || !_hrefMatchesAny(file, coverHrefs);
+        }).toList();
       }
 
       if (flattenedChapters.isEmpty) {
@@ -929,6 +946,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
     } catch (e, stackTrace) {
       debugPrint('EPUB 로드 실패: $e');
       debugPrint('스택 트레이스: $stackTrace');
+      if (generation != _loadGeneration) return;
 
       final errorMessage = e is EpubLoadException ? e.message : e.toString();
       widget.onError?.call(errorMessage);
@@ -1846,24 +1864,30 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
   @override
   Widget build(BuildContext context) {
     final settings = _settingsNotifier.settings;
+    final showTop = widget.showTopBar && _barsVisible;
+    final showBottom = widget.showBottomBar && _barsVisible;
+    final position = ReadingPosition(
+      pageIndex: _currentPageIndex,
+      totalPages: _pages.length,
+      progress: _lastProgress,
+      updatedAt: DateTime.now(),
+    );
 
-    return Scaffold(
-      backgroundColor: settings.backgroundColor,
-      body: SafeArea(
+    // No Scaffold here: the reader is an embeddable widget. Wrap it in your
+    // own Scaffold (or any layout) — SafeArea is applied internally.
+    return ColoredBox(
+      color: settings.backgroundColor,
+      child: SafeArea(
         child: Stack(
           children: [
-            // Background fill
-            Positioned.fill(
-              child: ColoredBox(color: settings.backgroundColor),
-            ),
             // Reader content — always fills the entire area
             Positioned.fill(
               child: settings.isPageMode
                   ? _buildPagedReader(settings)
                   : _buildScrollReader(settings),
             ),
-            // Reading progress bar — shown when bars are hidden
-            if (!_showTopBar)
+            // Reading progress bar — shown when the top bar is hidden
+            if (!showTop)
               Positioned(
                 top: 0,
                 left: 0,
@@ -1879,23 +1903,24 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
                 ),
               ),
             // Top bar overlay
-            if (_showTopBar)
+            if (showTop)
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
-                child: widget.topBarBuilder?.call(context, settings) ??
-                    _buildTopOverlay(settings),
+                child:
+                    widget.topBarBuilder?.call(context, settings, position) ??
+                        _buildTopOverlay(settings),
               ),
             // Bottom bar overlay
-            if (_showBottomBar)
+            if (showBottom)
               Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
-                child: widget.bottomBarBuilder != null
-                    ? widget.bottomBarBuilder!(context, settings)
-                    : _buildBottomOverlay(settings),
+                child: widget.bottomBarBuilder
+                        ?.call(context, settings, position) ??
+                    _buildBottomOverlay(settings),
               ),
           ],
         ),
@@ -1988,8 +2013,7 @@ class _EpubReaderWidgetState extends State<EpubReaderWidget> {
 
   void _toggleBars() {
     setState(() {
-      _showTopBar = !_showTopBar;
-      _showBottomBar = !_showBottomBar;
+      _barsVisible = !_barsVisible;
     });
   }
 }
