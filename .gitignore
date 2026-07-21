@@ -49,3 +49,6 @@ docs/
 CLAUDE.md
 
 *.epub
+!example/assets/script-749.epub
+!example/assets/639.epub
+!example/assets/example.epub

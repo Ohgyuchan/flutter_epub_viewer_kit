@@ -19,9 +19,14 @@ const colorThemes = [
   ColorTheme(background: Color(0xFFFFFBF0), text: Colors.black, name: 'Warm'),
   ColorTheme(background: Color(0xFFE8E8E8), text: Colors.black87, name: 'Gray'),
   ColorTheme(background: Colors.black, text: Colors.white, name: 'Black'),
-  ColorTheme(background: Color(0xFF1E1E1E), text: Color(0xFFE0E0E0), name: 'Dark'),
-  ColorTheme(background: Color(0xFFE8F5E9), text: Color(0xFF1B5E20), name: 'Green'),
-  ColorTheme(background: Color(0xFFECEFF1), text: Color(0xFF263238), name: 'Blue Gray'),
+  ColorTheme(
+      background: Color(0xFF1E1E1E), text: Color(0xFFE0E0E0), name: 'Dark'),
+  ColorTheme(
+      background: Color(0xFFE8F5E9), text: Color(0xFF1B5E20), name: 'Green'),
+  ColorTheme(
+      background: Color(0xFFECEFF1),
+      text: Color(0xFF263238),
+      name: 'Blue Gray'),
 ];
 
 // Reader Settings Model
@@ -75,7 +80,9 @@ class ReaderSettings {
       case 'Nanum Gothic':
         return GoogleFonts.nanumGothic(textStyle: baseStyle);
       default:
-        return baseStyle;
+        // Unknown names are passed through as-is so apps can use fonts
+        // bundled in their own pubspec.
+        return baseStyle.copyWith(fontFamily: fontFamily);
     }
   }
 

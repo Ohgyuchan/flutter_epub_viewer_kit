@@ -56,10 +56,11 @@ class EpubReaderController extends ChangeNotifier {
     this.onSettingsChanged,
     this.onBookmarkAdded,
     this.onBookmarkRemoved,
-  }) : _initialProgress = initialProgress?.clamp(0.0, 1.0),
-       _initialSettings = initialSettings,
-       _settings = initialSettings ?? const ReaderSettings(),
-       _bookmarks = initialBookmarks != null ? List.from(initialBookmarks) : [];
+  })  : _initialProgress = initialProgress?.clamp(0.0, 1.0),
+        _initialSettings = initialSettings,
+        _settings = initialSettings ?? const ReaderSettings(),
+        _bookmarks =
+            initialBookmarks != null ? List.from(initialBookmarks) : [];
 
   int _currentPage = 0;
   int _totalPages = 0;
@@ -123,11 +124,11 @@ class EpubReaderController extends ChangeNotifier {
 
   /// Current reading position.
   ReadingPosition get currentPosition => ReadingPosition(
-    pageIndex: _currentPage,
-    totalPages: _totalPages,
-    progress: _progress,
-    updatedAt: DateTime.now(),
-  );
+        pageIndex: _currentPage,
+        totalPages: _totalPages,
+        progress: _progress,
+        updatedAt: DateTime.now(),
+      );
 
   /// Whether the current page is bookmarked.
   bool get isCurrentPageBookmarked =>
@@ -193,7 +194,8 @@ class EpubReaderController extends ChangeNotifier {
   /// Toggle bookmark at the current position.
   /// Returns true if bookmark was added, false if removed.
   bool toggleBookmark() {
-    final existing = _bookmarks.where((b) => b.pageIndex == _currentPage).toList();
+    final existing =
+        _bookmarks.where((b) => b.pageIndex == _currentPage).toList();
     if (existing.isNotEmpty) {
       removeBookmark(existing.first);
       return false;
@@ -247,7 +249,8 @@ class EpubReaderController extends ChangeNotifier {
 
   @internal
   void removeBookmarkInternal(Bookmark bookmark) {
-    final removed = _bookmarks.where((b) => b.pageIndex == bookmark.pageIndex).toList();
+    final removed =
+        _bookmarks.where((b) => b.pageIndex == bookmark.pageIndex).toList();
     _bookmarks.removeWhere((b) => b.pageIndex == bookmark.pageIndex);
     for (final b in removed) {
       onBookmarkRemoved?.call(b);

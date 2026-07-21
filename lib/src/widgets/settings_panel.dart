@@ -51,42 +51,42 @@ class SettingsPanel extends StatelessWidget {
                   localization.theme,
                   settings.textColor,
                   Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: colorThemes.map((theme) {
-                        final isSelected =
-                            settings.backgroundColor == theme.background &&
-                            settings.textColor == theme.text;
-                        return GestureDetector(
-                          onTap: () {
-                            settingsNotifier.setColorTheme(theme);
-                          },
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: theme.background,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isSelected
-                                    ? Colors.blue
-                                    : Colors.grey.withValues(alpha: 0.3),
-                                width: isSelected ? 3 : 1,
-                              ),
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: colorThemes.map((theme) {
+                      final isSelected =
+                          settings.backgroundColor == theme.background &&
+                              settings.textColor == theme.text;
+                      return GestureDetector(
+                        onTap: () {
+                          settingsNotifier.setColorTheme(theme);
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: theme.background,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSelected
+                                  ? Colors.blue
+                                  : Colors.grey.withValues(alpha: 0.3),
+                              width: isSelected ? 3 : 1,
                             ),
-                            child: Center(
-                              child: Text(
-                                localization.themeSampleChar,
-                                style: TextStyle(
-                                  color: theme.text,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              localization.themeSampleChar,
+                              style: TextStyle(
+                                color: theme.text,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                        );
-                      }).toList(),
-                    ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 // Font Family Selector
@@ -94,26 +94,26 @@ class SettingsPanel extends StatelessWidget {
                   localization.font,
                   settings.textColor,
                   Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: [
-                        _buildFontButton(
-                          'Noto Sans',
-                          settings.fontFamily == 'Noto Sans',
-                          settings,
-                        ),
-                        _buildFontButton(
-                          'Nanum Myeongjo',
-                          settings.fontFamily == 'Nanum Myeongjo',
-                          settings,
-                        ),
-                        _buildFontButton(
-                          'Nanum Gothic',
-                          settings.fontFamily == 'Nanum Gothic',
-                          settings,
-                        ),
-                      ],
-                    ),
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: [
+                      _buildFontButton(
+                        'Noto Sans',
+                        settings.fontFamily == 'Noto Sans',
+                        settings,
+                      ),
+                      _buildFontButton(
+                        'Nanum Myeongjo',
+                        settings.fontFamily == 'Nanum Myeongjo',
+                        settings,
+                      ),
+                      _buildFontButton(
+                        'Nanum Gothic',
+                        settings.fontFamily == 'Nanum Gothic',
+                        settings,
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 // Font Size Control (1~9)
@@ -166,38 +166,41 @@ class SettingsPanel extends StatelessWidget {
                   localization.viewMode,
                   settings.textColor,
                   SizedBox(
-                      width: double.infinity,
-                      child: SegmentedButton<bool>(
-                        segments: [
-                          ButtonSegment(
-                            value: true,
-                            label: Text(
-                              localization.pageMode,
-                              style: TextStyle(color: settings.textColor),
-                            ),
-                            icon: Icon(Icons.auto_stories, color: settings.textColor),
+                    width: double.infinity,
+                    child: SegmentedButton<bool>(
+                      segments: [
+                        ButtonSegment(
+                          value: true,
+                          label: Text(
+                            localization.pageMode,
+                            style: TextStyle(color: settings.textColor),
                           ),
-                          ButtonSegment(
-                            value: false,
-                            label: Text(
-                              localization.scrollMode,
-                              style: TextStyle(color: settings.textColor),
-                            ),
-                            icon: Icon(Icons.view_day, color: settings.textColor),
+                          icon: Icon(Icons.auto_stories,
+                              color: settings.textColor),
+                        ),
+                        ButtonSegment(
+                          value: false,
+                          label: Text(
+                            localization.scrollMode,
+                            style: TextStyle(color: settings.textColor),
                           ),
-                        ],
-                        selected: {settings.isPageMode},
-                        onSelectionChanged: (value) {
-                          settingsNotifier.toggleViewMode();
-                          onSettingsChanged();
-                        },
-                        style: ButtonStyle(
-                          side: WidgetStatePropertyAll(
-                            BorderSide(color: settings.textColor.withValues(alpha: 0.3)),
-                          ),
+                          icon: Icon(Icons.view_day, color: settings.textColor),
+                        ),
+                      ],
+                      selected: {settings.isPageMode},
+                      // View mode does not affect layout metrics, so the
+                      // pagination cache stays valid — no onSettingsChanged.
+                      onSelectionChanged: (value) {
+                        settingsNotifier.toggleViewMode();
+                      },
+                      style: ButtonStyle(
+                        side: WidgetStatePropertyAll(
+                          BorderSide(
+                              color: settings.textColor.withValues(alpha: 0.3)),
                         ),
                       ),
                     ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 // Reset Button
@@ -271,16 +274,15 @@ class SettingsPanel extends StatelessWidget {
     }
 
     return OutlinedButton(
-        onPressed: () {
-          settingsNotifier.setFontFamily(fontFamily);
-        },
-        style: OutlinedButton.styleFrom(
-          backgroundColor: isSelected
-              ? settings.textColor.withValues(alpha: 0.2)
-              : null,
-          foregroundColor: settings.textColor,
-          side: BorderSide(color: settings.textColor.withValues(alpha: 0.5)),
-        ),
+      onPressed: () {
+        settingsNotifier.setFontFamily(fontFamily);
+      },
+      style: OutlinedButton.styleFrom(
+        backgroundColor:
+            isSelected ? settings.textColor.withValues(alpha: 0.2) : null,
+        foregroundColor: settings.textColor,
+        side: BorderSide(color: settings.textColor.withValues(alpha: 0.5)),
+      ),
       child: Text(displayText, style: textStyle),
     );
   }

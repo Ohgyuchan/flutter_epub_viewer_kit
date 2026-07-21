@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_epub_viewer_kit/flutter_epub_viewer_kit.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -21,6 +23,16 @@ void main() {
       const source = EpubSourceFile('/path/to/book.epub');
       expect(source.filePath, '/path/to/book.epub');
     });
+
+    test('EpubSourceBytes equality compares content', () {
+      final a = EpubSourceBytes(Uint8List.fromList([1, 2, 3]));
+      final b = EpubSourceBytes(Uint8List.fromList([1, 2, 3]));
+      final c = EpubSourceBytes(Uint8List.fromList([1, 2, 4]));
+      expect(a, equals(b));
+      expect(a.hashCode, b.hashCode);
+      expect(a, isNot(equals(c)));
+      expect(EpubSourceBytes(Uint8List(0)), EpubSourceBytes(Uint8List(0)));
+    });
   });
 
   group('ReaderSettings', () {
@@ -36,6 +48,11 @@ void main() {
       final newSettings = settings.copyWith(fontSize: 4);
       expect(newSettings.fontSize, 4);
       expect(newSettings.isPageMode, true); // unchanged
+    });
+
+    test('custom fontFamily is applied to textStyle', () {
+      const settings = ReaderSettings(fontFamily: 'MyBundledFont');
+      expect(settings.textStyle.fontFamily, 'MyBundledFont');
     });
   });
 

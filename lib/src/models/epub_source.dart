@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 /// Base class for EPUB source types.
 /// Use one of the subclasses to specify how to load the EPUB file.
@@ -47,8 +47,7 @@ class EpubSourceUrl extends EpubSource {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is EpubSourceUrl && other.url == url;
+      identical(this, other) || other is EpubSourceUrl && other.url == url;
 
   @override
   int get hashCode => url.hashCode;
@@ -66,6 +65,19 @@ class EpubSourceBytes extends EpubSource {
   final Uint8List bytes;
 
   const EpubSourceBytes(this.bytes);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EpubSourceBytes &&
+          (identical(other.bytes, bytes) || listEquals(other.bytes, bytes));
+
+  @override
+  int get hashCode => Object.hash(
+        bytes.length,
+        bytes.isEmpty ? 0 : bytes.first,
+        bytes.isEmpty ? 0 : bytes.last,
+      );
 }
 
 /// Load EPUB from Flutter assets.

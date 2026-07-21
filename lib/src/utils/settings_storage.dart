@@ -7,7 +7,8 @@ class SettingsStorage {
 
   final String storageKey;
 
-  SettingsStorage({String? storageKey}) : storageKey = storageKey ?? _defaultKey;
+  SettingsStorage({String? storageKey})
+      : storageKey = storageKey ?? _defaultKey;
 
   Future<ReaderSettings?> load() async {
     try {

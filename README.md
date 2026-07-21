@@ -14,6 +14,8 @@ A customizable EPUB reader widget for Flutter. Supports iOS, Android, and Web pl
 - Bookmark management
 - Resume reading from last position
 - Custom top/bottom bar support
+- Tap zones: left/right third to turn pages, center to toggle bars
+- Thin reading progress bar when bars are hidden (customizable color)
 - Optional watermark overlay via custom widget
 - **Automatic settings persistence** - Reader settings are automatically saved to device storage
 - Max readable pages limit (for preview/trial mode)
@@ -51,15 +53,19 @@ class _ReaderPageState extends State<ReaderPage> {
 
   @override
   Widget build(BuildContext context) {
-    return EpubReaderWidget(
-      source: const EpubSourceAsset('assets/book.epub'),
-      controller: _controller,
-      // Settings (theme, font, etc.) are automatically saved to device
-      // Use a unique key per book if needed
-      settingsStorageKey: 'epub_reader_settings',
-      watermark: Opacity(
-        opacity: 0.08,
-        child: Image.asset('assets/watermark.png', width: 200),
+    // The reader is an embeddable widget — it does not create its own
+    // Scaffold, so place it inside your layout (SafeArea is built in).
+    return Scaffold(
+      body: EpubReaderWidget(
+        source: const EpubSourceAsset('assets/book.epub'),
+        controller: _controller,
+        // Settings (theme, font, etc.) are automatically saved to device
+        // Use a unique key per book if needed
+        settingsStorageKey: 'epub_reader_settings',
+        watermark: Opacity(
+          opacity: 0.08,
+          child: Image.asset('assets/watermark.png', width: 200),
+        ),
       ),
     );
   }
@@ -216,18 +222,35 @@ All localizations cover the following UI elements:
 
 Color theme names (`ColorTheme.name`) use English globally and are not part of localization.
 
+## Reading UI
+
+In page mode the screen is split into three tap zones: the left third goes to
+the previous page, the right third goes to the next page, and the center
+toggles the top/bottom bars. In scroll mode, tapping anywhere toggles the bars.
+
+When the bars are hidden, a thin (2px) reading progress bar is shown at the
+top. Customize its color with `progressBarColor`:
+
+```dart
+EpubReaderWidget(
+  source: const EpubSourceAsset('assets/book.epub'),
+  title: 'My Book',            // Shown in the default top bar
+  progressBarColor: Colors.indigo,  // Default: text color at 30% opacity
+);
+```
+
 ## Custom Top/Bottom Bars
 
-The `topBarBuilder` must return a `PreferredSizeWidget`:
+Both builders have the signature
+`Widget Function(BuildContext context, ReaderSettings settings, ReadingPosition position)`
+and are re-invoked whenever the page, progress, or settings change — read
+current state from `position` (or from your controller):
 
 ```dart
 EpubReaderWidget(
   source: const EpubSourceAsset('assets/book.epub'),
   controller: _controller,
-  showTopBar: true,
-  showBottomBar: true,
-  topBarBuilder: (context, settings) {
-    // Must return PreferredSizeWidget (AppBar, PreferredSize, etc.)
+  topBarBuilder: (context, settings, position) {
     return AppBar(
       backgroundColor: settings.backgroundColor,
       title: Text('My Reader', style: TextStyle(color: settings.textColor)),
@@ -247,7 +270,7 @@ EpubReaderWidget(
       ],
     );
   },
-  bottomBarBuilder: (context, settings) {
+  bottomBarBuilder: (context, settings, position) {
     return Container(
       color: settings.backgroundColor,
       padding: const EdgeInsets.all(16),
@@ -255,7 +278,7 @@ EpubReaderWidget(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            '${_controller.currentPage + 1} / ${_controller.totalPages}',
+            '${position.pageIndex + 1} / ${position.totalPages}',
             style: TextStyle(color: settings.textColor),
           ),
           Row(
@@ -276,6 +299,10 @@ EpubReaderWidget(
   },
 );
 ```
+
+`showTopBar` / `showBottomBar` (default `true`) enable each bar. Setting one
+to `false` disables that bar entirely — the center tap toggle only affects
+enabled bars.
 
 ## ReaderSettings
 
@@ -322,6 +349,10 @@ Settings are automatically:
 - Loaded when the widget initializes
 - Saved whenever settings change (theme, font, margin, etc.)
 - Restored on app restart
+
+Note: when persistence is enabled and saved settings exist, they take
+precedence over `initialSettings`. Pass `settingsStorageKey: null` if you want
+`initialSettings` to always apply.
 
 ### Manual Persistence (Position & Bookmarks)
 
@@ -381,6 +412,10 @@ EpubReaderWidget(
   onError: (error) {
     print('Error: $error');
   },
+  onLoadingProgress: (progress) {
+    // 0.0 ~ 1.0 — parsing is the first half, pagination the second
+    print('Loading: ${(progress * 100).toStringAsFixed(0)}%');
+  },
   onMaxPageReached: (maxPage, totalPages) {
     print('Reached limit: $maxPage / $totalPages');
   },
@@ -389,9 +424,20 @@ EpubReaderWidget(
 
 ## Available Font Families
 
+Built-in fonts (loaded via Google Fonts) selectable in the settings panel:
+
 - `'Noto Sans'` (default)
 - `'Nanum Myeongjo'`
 - `'Nanum Gothic'`
+
+Any other `fontFamily` string is applied as-is, so you can use fonts bundled
+in your app:
+
+```dart
+controller.updateSettings(
+  controller.currentSettings.copyWith(fontFamily: 'MyBundledFont'),
+);
+```
 
 ## Color Themes
 
