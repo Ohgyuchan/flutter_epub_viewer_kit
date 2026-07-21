@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'EPUB Viewer Kit Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2E7CE0)),
         useMaterial3: true,
       ),
       home: const HomePage(),
@@ -397,6 +397,11 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -610,13 +615,15 @@ class _ReaderPageState extends State<ReaderPage> {
     final isBookmarked = _controller.isCurrentPageBookmarked;
 
     return Material(
-      color: settings.backgroundColor.withValues(alpha: 0.95),
-      elevation: 4,
+      color: settings.surfaceColor.withValues(alpha: 0.96),
       child: SafeArea(
         bottom: false,
         child: Container(
           height: kToolbarHeight,
           padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: settings.dividerColor)),
+          ),
           child: Row(
             children: [
               IconButton(
@@ -642,7 +649,8 @@ class _ReaderPageState extends State<ReaderPage> {
               IconButton(
                 icon: Icon(
                   isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                  color: isBookmarked ? Colors.amber : settings.textColor,
+                  color:
+                      isBookmarked ? settings.accentColor : settings.textColor,
                 ),
                 onPressed: () => _controller.toggleBookmark(),
               ),
@@ -669,21 +677,23 @@ class _ReaderPageState extends State<ReaderPage> {
     final progress = position.progress;
 
     return Material(
-      color: settings.backgroundColor.withValues(alpha: 0.95),
-      elevation: 4,
+      color: settings.surfaceColor.withValues(alpha: 0.96),
       child: SafeArea(
         top: false,
-        child: Padding(
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: settings.dividerColor)),
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               LinearProgressIndicator(
                 value: progress,
-                backgroundColor: settings.textColor.withValues(alpha: 0.2),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  settings.textColor.withValues(alpha: 0.6),
-                ),
+                minHeight: 3,
+                backgroundColor: settings.dividerColor,
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(settings.accentColor),
               ),
               const SizedBox(height: 8),
               Row(
@@ -692,7 +702,7 @@ class _ReaderPageState extends State<ReaderPage> {
                   Text(
                     '$currentPage / $totalPages (${(progress * 100).toStringAsFixed(1)}%)',
                     style: TextStyle(
-                      color: settings.textColor.withValues(alpha: 0.7),
+                      color: settings.mutedColor,
                       fontSize: 12,
                     ),
                   ),
