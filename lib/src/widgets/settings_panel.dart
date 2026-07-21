@@ -29,190 +29,115 @@ class SettingsPanel extends StatelessWidget {
             maxHeight: MediaQuery.of(context).size.height * 0.5,
           ),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-            ),
-            color: settings.backgroundColor,
-            border: Border(
-              top: BorderSide(
-                color: settings.textColor.withValues(alpha: 0.2),
-                width: 1,
-              ),
-            ),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(20)),
+            color: settings.surfaceColor,
           ),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Color Theme Selector
-                _buildSection(
-                  localization.theme,
-                  settings.textColor,
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: colorThemes.map((theme) {
-                      final isSelected =
-                          settings.backgroundColor == theme.background &&
-                              settings.textColor == theme.text;
-                      return GestureDetector(
-                        onTap: () {
-                          settingsNotifier.setColorTheme(theme);
-                        },
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: theme.background,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected
-                                  ? Colors.blue
-                                  : Colors.grey.withValues(alpha: 0.3),
-                              width: isSelected ? 3 : 1,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              localization.themeSampleChar,
-                              style: TextStyle(
-                                color: theme.text,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Font Family Selector
-                _buildSection(
-                  localization.font,
-                  settings.textColor,
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: [
-                      _buildFontButton(
-                        'Noto Sans',
-                        settings.fontFamily == 'Noto Sans',
-                        settings,
-                      ),
-                      _buildFontButton(
-                        'Nanum Myeongjo',
-                        settings.fontFamily == 'Nanum Myeongjo',
-                        settings,
-                      ),
-                      _buildFontButton(
-                        'Nanum Gothic',
-                        settings.fontFamily == 'Nanum Gothic',
-                        settings,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Font Size Control (1~9)
-                _buildControlRow(
-                  localization.fontSize,
-                  settings.fontSize,
-                  () {
-                    settingsNotifier.decreaseFontSize();
-                    onSettingsChanged();
-                  },
-                  () {
-                    settingsNotifier.increaseFontSize();
-                    onSettingsChanged();
-                  },
-                  settings.textColor,
-                ),
-                const SizedBox(height: 8),
-                // Line Spacing Control (1~5)
-                _buildControlRow(
-                  localization.lineSpacing,
-                  settings.lineSpacing,
-                  () {
-                    settingsNotifier.decreaseLineSpacing();
-                    onSettingsChanged();
-                  },
-                  () {
-                    settingsNotifier.increaseLineSpacing();
-                    onSettingsChanged();
-                  },
-                  settings.textColor,
-                ),
-                const SizedBox(height: 8),
-                // Margin Control (1~5)
-                _buildControlRow(
-                  localization.margin,
-                  settings.margin,
-                  () {
-                    settingsNotifier.decreaseMargin();
-                    onSettingsChanged();
-                  },
-                  () {
-                    settingsNotifier.increaseMargin();
-                    onSettingsChanged();
-                  },
-                  settings.textColor,
-                ),
-                const SizedBox(height: 16),
-                // Page/Scroll Mode Toggle
-                _buildSection(
-                  localization.viewMode,
-                  settings.textColor,
-                  SizedBox(
-                    width: double.infinity,
-                    child: SegmentedButton<bool>(
-                      segments: [
-                        ButtonSegment(
-                          value: true,
-                          label: Text(
-                            localization.pageMode,
-                            style: TextStyle(color: settings.textColor),
-                          ),
-                          icon: Icon(Icons.auto_stories,
-                              color: settings.textColor),
-                        ),
-                        ButtonSegment(
-                          value: false,
-                          label: Text(
-                            localization.scrollMode,
-                            style: TextStyle(color: settings.textColor),
-                          ),
-                          icon: Icon(Icons.view_day, color: settings.textColor),
-                        ),
-                      ],
-                      selected: {settings.isPageMode},
-                      // View mode does not affect layout metrics, so the
-                      // pagination cache stays valid — no onSettingsChanged.
-                      onSelectionChanged: (value) {
-                        settingsNotifier.toggleViewMode();
-                      },
-                      style: ButtonStyle(
-                        side: WidgetStatePropertyAll(
-                          BorderSide(
-                              color: settings.textColor.withValues(alpha: 0.3)),
-                        ),
-                      ),
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: settings.textColor.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                // Reset Button
-                TextButton.icon(
-                  onPressed: () {
-                    settingsNotifier.resetToDefault();
+                _buildSection(
+                  localization.theme,
+                  settings,
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: colorThemes
+                        .map((theme) => _buildThemeSwatch(theme, settings))
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _buildSection(
+                  localization.font,
+                  settings,
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildFontChip('Noto Sans', settings),
+                      _buildFontChip('Nanum Myeongjo', settings),
+                      _buildFontChip('Nanum Gothic', settings),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _buildStepper(
+                  localization.fontSize,
+                  settings.fontSize,
+                  settings,
+                  onDecrease: () {
+                    settingsNotifier.decreaseFontSize();
                     onSettingsChanged();
                   },
-                  icon: Icon(Icons.refresh, color: settings.textColor),
-                  label: Text(
-                    localization.resetSettings,
-                    style: TextStyle(color: settings.textColor),
+                  onIncrease: () {
+                    settingsNotifier.increaseFontSize();
+                    onSettingsChanged();
+                  },
+                ),
+                const SizedBox(height: 10),
+                _buildStepper(
+                  localization.lineSpacing,
+                  settings.lineSpacing,
+                  settings,
+                  onDecrease: () {
+                    settingsNotifier.decreaseLineSpacing();
+                    onSettingsChanged();
+                  },
+                  onIncrease: () {
+                    settingsNotifier.increaseLineSpacing();
+                    onSettingsChanged();
+                  },
+                ),
+                const SizedBox(height: 10),
+                _buildStepper(
+                  localization.margin,
+                  settings.margin,
+                  settings,
+                  onDecrease: () {
+                    settingsNotifier.decreaseMargin();
+                    onSettingsChanged();
+                  },
+                  onIncrease: () {
+                    settingsNotifier.increaseMargin();
+                    onSettingsChanged();
+                  },
+                ),
+                const SizedBox(height: 20),
+                _buildSection(
+                  localization.viewMode,
+                  settings,
+                  _buildModeToggle(settings),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () {
+                      settingsNotifier.resetToDefault();
+                      onSettingsChanged();
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: settings.mutedColor,
+                    ),
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: Text(
+                      localization.resetSettings,
+                      style: const TextStyle(fontSize: 13),
+                    ),
                   ),
                 ),
               ],
@@ -223,105 +148,265 @@ class SettingsPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildSection(String label, Color textColor, Widget content) {
+  Widget _buildSection(String label, ReaderSettings settings, Widget content) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: textColor)),
-        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            color: settings.mutedColor,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 10),
         content,
       ],
     );
   }
 
-  Widget _buildFontButton(
-    String fontFamily,
-    bool isSelected,
-    ReaderSettings settings,
-  ) {
-    // Get display text and style for each font
-    String displayText;
-    TextStyle textStyle;
+  Widget _buildThemeSwatch(ColorTheme theme, ReaderSettings settings) {
+    final isSelected = settings.backgroundColor == theme.background &&
+        settings.textColor == theme.text;
 
-    switch (fontFamily) {
-      case 'Noto Sans':
-        displayText = localization.fontNotoSans;
-        textStyle = GoogleFonts.notoSans(
-          color: settings.textColor,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        );
-        break;
-      case 'Nanum Myeongjo':
-        displayText = localization.fontSerif;
-        textStyle = GoogleFonts.nanumMyeongjo(
-          color: settings.textColor,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        );
-        break;
-      case 'Nanum Gothic':
-        displayText = localization.fontSansSerif;
-        textStyle = GoogleFonts.nanumGothic(
-          color: settings.textColor,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        );
-        break;
-      default:
-        displayText = fontFamily;
-        textStyle = TextStyle(
-          color: settings.textColor,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        );
-    }
-
-    return OutlinedButton(
-      onPressed: () {
-        settingsNotifier.setFontFamily(fontFamily);
-      },
-      style: OutlinedButton.styleFrom(
-        backgroundColor:
-            isSelected ? settings.textColor.withValues(alpha: 0.2) : null,
-        foregroundColor: settings.textColor,
-        side: BorderSide(color: settings.textColor.withValues(alpha: 0.5)),
-      ),
-      child: Text(displayText, style: textStyle),
-    );
-  }
-
-  Widget _buildControlRow(
-    String label,
-    int value,
-    VoidCallback onDecrease,
-    VoidCallback onIncrease,
-    Color textColor,
-  ) {
-    return Row(
-      children: [
-        Flexible(
-          child: Text(
-            label,
-            style: TextStyle(color: textColor),
-            overflow: TextOverflow.ellipsis,
+    return GestureDetector(
+      onTap: () => settingsNotifier.setColorTheme(theme),
+      child: Container(
+        width: 44,
+        height: 44,
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isSelected ? settings.accentColor : Colors.transparent,
+            width: 2,
           ),
         ),
-        const Spacer(),
-        IconButton(
-          icon: Icon(Icons.remove_circle_outline, color: textColor),
-          onPressed: onDecrease,
-        ),
-        SizedBox(
-          width: 40,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.background,
+            shape: BoxShape.circle,
+            border: Border.all(color: settings.dividerColor),
+          ),
           child: Center(
             child: Text(
-              value.toString(),
-              style: TextStyle(fontSize: 16, color: textColor),
+              localization.themeSampleChar,
+              style: TextStyle(
+                color: theme.text,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
-        IconButton(
-          icon: Icon(Icons.add_circle_outline, color: textColor),
-          onPressed: onIncrease,
+      ),
+    );
+  }
+
+  Widget _buildFontChip(String fontFamily, ReaderSettings settings) {
+    final isSelected = settings.fontFamily == fontFamily;
+    final accent = settings.accentColor;
+
+    String label;
+    TextStyle style;
+    switch (fontFamily) {
+      case 'Noto Sans':
+        label = localization.fontNotoSans;
+        style = GoogleFonts.notoSans(color: settings.textColor);
+        break;
+      case 'Nanum Myeongjo':
+        label = localization.fontSerif;
+        style = GoogleFonts.nanumMyeongjo(color: settings.textColor);
+        break;
+      case 'Nanum Gothic':
+        label = localization.fontSansSerif;
+        style = GoogleFonts.nanumGothic(color: settings.textColor);
+        break;
+      default:
+        label = fontFamily;
+        style = TextStyle(color: settings.textColor, fontFamily: fontFamily);
+    }
+
+    return GestureDetector(
+      onTap: () => settingsNotifier.setFontFamily(fontFamily),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? accent.withValues(alpha: 0.10) : null,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? accent : settings.dividerColor,
+          ),
+        ),
+        child: Text(
+          label,
+          style: style.copyWith(
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepper(
+    String label,
+    int value,
+    ReaderSettings settings, {
+    required VoidCallback onDecrease,
+    required VoidCallback onIncrease,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(color: settings.textColor, fontSize: 14),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: settings.dividerColor,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _StepperButton(
+                icon: Icons.remove,
+                color: settings.textColor,
+                onTap: onDecrease,
+              ),
+              SizedBox(
+                width: 32,
+                child: Center(
+                  child: Text(
+                    '$value',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: settings.textColor,
+                    ),
+                  ),
+                ),
+              ),
+              _StepperButton(
+                icon: Icons.add,
+                color: settings.textColor,
+                onTap: onIncrease,
+              ),
+            ],
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildModeToggle(ReaderSettings settings) {
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: settings.dividerColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          _buildModeSegment(
+            localization.pageMode,
+            Icons.auto_stories,
+            settings.isPageMode,
+            settings,
+          ),
+          _buildModeSegment(
+            localization.scrollMode,
+            Icons.view_day,
+            !settings.isPageMode,
+            settings,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeSegment(
+    String label,
+    IconData icon,
+    bool isSelected,
+    ReaderSettings settings,
+  ) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          // View mode does not affect layout metrics, so the
+          // pagination cache stays valid - no onSettingsChanged.
+          if (!isSelected) settingsNotifier.toggleViewMode();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color:
+                isSelected ? settings.backgroundColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected ? settings.textColor : settings.mutedColor,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color:
+                      isSelected ? settings.textColor : settings.mutedColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StepperButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _StepperButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      customBorder: const CircleBorder(),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Icon(icon, size: 18, color: color),
+      ),
     );
   }
 }
