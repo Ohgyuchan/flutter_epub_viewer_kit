@@ -20,10 +20,10 @@ void main() {
     await tester.pumpWidget(wrap(notifier));
 
     // 6개 테마 스와치가 샘플 문자를 렌더링
-    expect(find.text('가'), findsNWidgets(6));
+    expect(find.text('가'), findsNWidgets(3));
 
-    // Dark 스와치(index 4) 탭
-    await tester.tap(find.text('가').at(4));
+    // Dark 스와치(index 1) 탭
+    await tester.tap(find.text('가').at(1));
     await tester.pump();
 
     expect(notifier.settings.backgroundColor, const Color(0xFF222326));

@@ -77,12 +77,12 @@ void main() {
       );
       expect(settings.accentColor, const Color(0xFF2E7CE0));
 
-      final sepia = colorThemes.firstWhere((t) => t.name == 'Sepia');
-      final sepiaSettings = ReaderSettings(
-        backgroundColor: sepia.background,
-        textColor: sepia.text,
+      final dark = colorThemes.firstWhere((t) => t.name == 'Dark');
+      final darkSettings = ReaderSettings(
+        backgroundColor: dark.background,
+        textColor: dark.text,
       );
-      expect(sepiaSettings.accentColor, const Color(0xFFB0763B));
+      expect(darkSettings.accentColor, const Color(0xFF6AA5E8));
     });
 
     test('accent falls back by background brightness for custom colors', () {
@@ -99,7 +99,7 @@ void main() {
     });
 
     test('surfaceColor shifts darker on light bg, lighter on dark bg', () {
-      const light = ReaderSettings(); // default = Sepia
+      const light = ReaderSettings(); // default = White
       expect(
         HSLColor.fromColor(light.surfaceColor).lightness,
         lessThan(HSLColor.fromColor(light.backgroundColor).lightness),
@@ -121,10 +121,10 @@ void main() {
       expect(settings.dividerColor.a, closeTo(0.08, 0.01));
     });
 
-    test('default settings use retuned Sepia preset', () {
+    test('default settings use White preset', () {
       const settings = ReaderSettings();
-      expect(settings.backgroundColor, const Color(0xFFFAF4E6));
-      expect(settings.textColor, const Color(0xFF433A2F));
+      expect(settings.backgroundColor, const Color(0xFFFFFFFF));
+      expect(settings.textColor, const Color(0xFF212529));
     });
   });
 }

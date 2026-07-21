@@ -27,21 +27,6 @@ const colorThemes = [
       accent: Color(0xFF2E7CE0),
       name: 'White'),
   ColorTheme(
-      background: Color(0xFFFAF4E6),
-      text: Color(0xFF433A2F),
-      accent: Color(0xFFB0763B),
-      name: 'Sepia'),
-  ColorTheme(
-      background: Color(0xFFECEEF0),
-      text: Color(0xFF343A40),
-      accent: Color(0xFF2E7CE0),
-      name: 'Gray'),
-  ColorTheme(
-      background: Color(0xFFE5EFE7),
-      text: Color(0xFF2E4A38),
-      accent: Color(0xFF3E7A55),
-      name: 'Paper Green'),
-  ColorTheme(
       background: Color(0xFF222326),
       text: Color(0xFFC8C8C8),
       accent: Color(0xFF6AA5E8),
@@ -64,8 +49,8 @@ class ReaderSettings {
   final bool isPageMode; // true = 페이지, false = 스크롤
 
   const ReaderSettings({
-    this.backgroundColor = const Color(0xFFFAF4E6),
-    this.textColor = const Color(0xFF433A2F),
+    this.backgroundColor = const Color(0xFFFFFFFF),
+    this.textColor = const Color(0xFF212529),
     this.fontFamily = 'Noto Sans',
     this.fontSize = 4,
     this.lineSpacing = 2,
@@ -177,8 +162,8 @@ class ReaderSettings {
   /// Create from JSON
   factory ReaderSettings.fromJson(Map<String, dynamic> json) {
     return ReaderSettings(
-      backgroundColor: Color(json['backgroundColor'] as int? ?? 0xFFFAF4E6),
-      textColor: Color(json['textColor'] as int? ?? 0xFF433A2F),
+      backgroundColor: Color(json['backgroundColor'] as int? ?? 0xFFFFFFFF),
+      textColor: Color(json['textColor'] as int? ?? 0xFF212529),
       fontFamily: json['fontFamily'] as String? ?? 'Noto Sans',
       fontSize: json['fontSize'] as int? ?? 4,
       lineSpacing: json['lineSpacing'] as int? ?? 2,

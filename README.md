@@ -308,8 +308,8 @@ enabled bars.
 
 ```dart
 const ReaderSettings({
-  Color backgroundColor,    // Default: Color(0xFFFAF4E6)
-  Color textColor,          // Default: Color(0xFF433A2F)
+  Color backgroundColor,    // Default: Color(0xFFFFFFFF)
+  Color textColor,          // Default: Color(0xFF212529)
   String fontFamily,        // Default: 'Noto Sans'
   int fontSize,             // 1~9, Default: 4
   int lineSpacing,          // 1~5, Default: 2
@@ -446,9 +446,6 @@ Built-in themes available via `colorThemes`:
 | Name | Background | Text | Accent |
 | --- | --- | --- | --- |
 | White | #FFFFFF | #212529 | #2E7CE0 |
-| Sepia | #FAF4E6 | #433A2F | #B0763B |
-| Gray | #ECEEF0 | #343A40 | #2E7CE0 |
-| Paper Green | #E5EFE7 | #2E4A38 | #3E7A55 |
 | Dark | #222326 | #C8C8C8 | #6AA5E8 |
 | Black | #000000 | #B8B8B8 | #6AA5E8 |
 
